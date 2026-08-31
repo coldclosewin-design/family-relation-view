@@ -298,6 +298,42 @@ button.toggled {
   cursor: pointer;
 }
 
+/* 프레스 스프링: 누르면 살짝 눌리고, 놓으면 오버슈트하며 복귀 */
+.node-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 220ms cubic-bezier(0.34, 1.8, 0.5, 1);
+}
+
+.person-node:active .node-inner {
+  transform: scale(0.94);
+  transition-duration: 70ms;
+  transition-timing-function: ease-out;
+}
+
+/* 드래그 젤리: 속도 기반 변형이 부드럽게 이어지도록 */
+.person-node.drag-ghost .node-inner {
+  transition: transform 130ms ease-out;
+}
+
+/* 드롭 안착 바운스 */
+@keyframes settle-bounce {
+  0% { transform: scale(1.1); }
+  55% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+.person-node.dropped .node-inner {
+  animation: settle-bounce 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 물방울 광택 */
+.gloss {
+  fill: url(#grad-gloss);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .person-card {
   fill: #fff;
   stroke: #cfc9bc;
@@ -386,6 +422,29 @@ button.toggled {
 
 .add-btn:hover text {
   fill: #fff;
+}
+
+/* 배지·버튼 프레스 스프링 (transform 어트리뷰트를 덮지 않도록 자식에 적용) */
+.add-btn > circle,
+.add-btn > text,
+.inlaw-toggle > rect,
+.inlaw-toggle > text,
+.desc-toggle > rect,
+.desc-toggle > text {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 200ms cubic-bezier(0.34, 1.8, 0.5, 1);
+}
+
+.add-btn:active > circle,
+.add-btn:active > text,
+.inlaw-toggle:active > rect,
+.inlaw-toggle:active > text,
+.desc-toggle:active > rect,
+.desc-toggle:active > text {
+  transform: scale(0.8);
+  transition-duration: 60ms;
+  transition-timing-function: ease-out;
 }
 
 /* ── 결과 패널 ────────────────────────── */

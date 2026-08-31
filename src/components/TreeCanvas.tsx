@@ -28,6 +28,8 @@ interface DragState {
   pointer: { x: number; y: number };
   startClient: { x: number; y: number };
   active: boolean;
+  /** 드래그 젤리 변형용, 지수평활된 수평 속도 (svg 단위/이벤트) */
+  vx: number;
 }
 
 const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
@@ -175,6 +177,8 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
 
   // ── 형제 드래그 정렬 ─────────────────────────────────
   const [drag, setDrag] = useState<DragState | null>(null);
+  /** 드롭 직후 안착 바운스 대상 */
+  const [droppedId, setDroppedId] = useState<string | null>(null);
   const dragRef = useRef(drag);
   dragRef.current = drag;
   const suppressClick = useRef(false);
@@ -182,6 +186,8 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const clientToSvg = (cx: number, cy: number) => {
     const rect = svgRef.current!.getBoundingClientRect();
     const vb = viewBoxRef.current;
+    // 패널이 숨겨져 크기가 0이면 NaN 좌표가 되지 않도록 가드
+    if (rect.width === 0 || rect.height === 0) return { x: vb.x, y: vb.y };
     return {
       x: vb.x + ((cx - rect.left) / rect.width) * vb.w,
       y: vb.y + ((cy - rect.top) / rect.height) * vb.h,
@@ -216,6 +222,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
       pointer: pt,
       startClient: { x: e.clientX, y: e.clientY },
       active: false,
+      vx: 0,
     });
   };
 
@@ -226,7 +233,9 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
       if (!d || e.pointerId !== d.pointerId) return;
       const dist = Math.hypot(e.clientX - d.startClient.x, e.clientY - d.startClient.y);
       const active = d.active || dist > DRAG_THRESHOLD_PX;
-      setDrag({ ...d, pointer: clientToSvg(e.clientX, e.clientY), active });
+      const pointer = clientToSvg(e.clientX, e.clientY);
+      const vx = d.vx * 0.6 + (pointer.x - d.pointer.x) * 0.4;
+      setDrag({ ...d, pointer, active, vx });
     };
     const onUp = (e: PointerEvent) => {
       const d = dragRef.current;
@@ -244,6 +253,8 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
         const newOrder = others.map((s) => s.id);
         newOrder.splice(insertIdx, 0, d.personId);
         if (newOrder.join() !== d.groupIds.join()) reorderSiblings(newOrder);
+        setDroppedId(d.personId);
+        setTimeout(() => setDroppedId(null), 500);
       }
       setDrag(null);
     };
@@ -339,6 +350,10 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
             <stop offset="0" stopColor="#fef4f7" />
             <stop offset="1" stopColor="#fbdde7" />
           </linearGradient>
+          <linearGradient id="grad-gloss" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#ffffff" stopOpacity="0.85" />
+            <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+          </linearGradient>
         </defs>
         <g className="gen-bands">
           {genBands.map((b, i) => (
@@ -383,6 +398,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
               dimmed={drag?.active === true && pos.id === drag.personId}
               onPath={pathInfo?.ids.has(pos.id) === true}
               flash={pos.id === flashId}
+              dropped={pos.id === droppedId}
               subLabel={termMap?.get(pos.id)}
               onSelect={guardedSelect}
               onOpenDialog={guardedOpenDialog}
@@ -464,6 +480,11 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
             isEgo={drag.personId === data.egoId}
             selection={null}
             ghost
+            innerStyle={{
+              transform: `skewX(${-Math.max(-10, Math.min(10, drag.vx * 0.8))}deg) scaleX(${
+                1 + Math.min(Math.abs(drag.vx) * 0.012, 0.1)
+              }) scaleY(${1 - Math.min(Math.abs(drag.vx) * 0.006, 0.05)})`,
+            }}
           />
         )}
       </svg>
