@@ -80,8 +80,11 @@ function makeFixture(): FamilyData {
   add('sisterH', '매제', 'male', 1992);
   marry('sister', 'sisterH');
   add('sisterS', '생질', 'male', 2020, 'sisterH', 'sister');
-  // 처가
-  add('wF', '장인', 'male', 1962);
+  // 처가 (증조·조부·고모 포함)
+  add('wggfa', '처증조', 'male', 1900);
+  add('wgfa', '처조부', 'male', 1935, 'wggfa');
+  add('wF', '장인', 'male', 1962, 'wgfa');
+  add('wFZ', '처고모', 'female', 1965, 'wgfa');
   add('wM', '장모', 'female', 1965);
   marry('wF', 'wM');
   add('wife', '아내', 'female', 1991, 'wF', 'wM');
@@ -223,6 +226,26 @@ describe('시가 (아내 기준)', () => {
   });
   it('시부모 → 며느리', () => {
     expect(kin('father', 'wife').casual).toBe('며느리');
+  });
+});
+
+describe('처가·시가 확장 호칭', () => {
+  it('아내의 조부 → 할아버님 (처조부)', () => {
+    expect(kin('ego', 'wgfa')).toMatchObject({ casual: '할아버님', formal: '처조부' });
+  });
+  it('아내의 고모 → 고모님 (처고모) / 역방향 조카사위', () => {
+    expect(kin('ego', 'wFZ')).toMatchObject({ casual: '고모님', formal: '처고모' });
+    expect(kin('wFZ', 'ego')).toMatchObject({ casual: '조카사위', formal: '질서' });
+  });
+  it('남편의 이모/외삼촌 → 이모님(시이모)/외삼촌님(시외숙)', () => {
+    expect(kin('brotherW', 'maunt')).toMatchObject({ casual: '이모님', formal: '시이모' });
+    expect(kin('brotherW', 'muncle')).toMatchObject({ casual: '외삼촌님', formal: '시외숙' });
+  });
+  it('손자며느리 (손부)', () => {
+    expect(kin('father', 'sonW')).toMatchObject({ casual: '손자며느리', formal: '손부' });
+  });
+  it('규칙에 없는 배우자 쪽 관계는 "처가 쪽 ○○"로 구체화', () => {
+    expect(kin('ego', 'wggfa').casual).toBe('처가 쪽 증조할아버지');
   });
 });
 

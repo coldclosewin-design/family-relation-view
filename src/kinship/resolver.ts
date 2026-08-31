@@ -128,6 +128,22 @@ export function computeKinship(
       tokens,
     };
   }
+  // 배우자 접두(H/W) 관계는 나머지 경로를 배우자 시점으로 풀어
+  // "처가 쪽 ○○"처럼 구체적으로 표현한다
+  if ((tokens[0] === 'H' || tokens[0] === 'W') && tokens.length > 1) {
+    const spouse = graph.persons[steps[0].personId];
+    const restRule = matchRule(tokens.slice(1), spouse, target);
+    if (restRule) {
+      return {
+        kind: 'fallback',
+        casual: `${tokens[0] === 'W' ? '처가 쪽' : '시가 쪽'} ${restRule.casual}`,
+        description,
+        chon,
+        inLaw,
+        tokens,
+      };
+    }
+  }
   return {
     kind: 'fallback',
     casual: inLaw ? '배우자 쪽 친척' : `${chon}촌 친척`,

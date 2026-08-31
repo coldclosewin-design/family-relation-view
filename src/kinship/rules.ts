@@ -129,6 +129,12 @@ export const RULES: KinshipRule[] = [
   { pattern: 'Z.D', egoGender: 'female', casual: '조카딸', formal: '이질녀' },
   { pattern: 'B.S.W', casual: '조카며느리', formal: '질부' },
   { pattern: 'B.D.H', casual: '조카사위', formal: '질서' },
+  { pattern: 'Z.S.W', casual: '조카며느리' },
+  { pattern: 'Z.D.H', casual: '조카사위' },
+
+  // ── 손주의 배우자 ──────────────────────────────────────
+  { pattern: 'S.S.W', casual: '손자며느리', formal: '손부' },
+  { pattern: 'S.D.H', casual: '손녀사위', formal: '손서' },
 
   // ── 처가 (아내의 가족) ─────────────────────────────────
   { pattern: 'W.F', casual: '장인어른', formal: '장인' },
@@ -145,6 +151,28 @@ export const RULES: KinshipRule[] = [
   { pattern: 'W.Z.H', casual: '동서' },
   { pattern: 'W.B.C', casual: '처조카' },
   { pattern: 'W.Z.C', casual: '처조카' },
+
+  // ── 처가 확장: 조부모·백숙부·고모·이모·사촌 ────────────
+  { pattern: 'W.F.F', casual: '할아버님', formal: '처조부' },
+  { pattern: 'W.F.M', casual: '할머님', formal: '처조모' },
+  { pattern: 'W.M.F', casual: '할아버님', formal: '처외조부' },
+  { pattern: 'W.M.M', casual: '할머님', formal: '처외조모' },
+  { pattern: 'W.F.OB', casual: '큰아버님', formal: '처백부' },
+  { pattern: 'W.F.YB', casual: '작은아버님', formal: '처숙부' },
+  { pattern: 'W.F.B', casual: '처삼촌', formal: '처숙부' },
+  { pattern: 'W.F.OB.W', casual: '큰어머님', formal: '처백모' },
+  { pattern: 'W.F.YB.W', casual: '작은어머님', formal: '처숙모' },
+  { pattern: 'W.F.B.W', casual: '처숙모' },
+  { pattern: 'W.F.Z', casual: '고모님', formal: '처고모' },
+  { pattern: 'W.F.Z.H', casual: '고모부님', formal: '처고모부' },
+  { pattern: 'W.M.B', casual: '외삼촌님', formal: '처외숙' },
+  { pattern: 'W.M.B.W', casual: '외숙모님', formal: '처외숙모' },
+  { pattern: 'W.M.Z', casual: '이모님', formal: '처이모' },
+  { pattern: 'W.M.Z.H', casual: '이모부님', formal: '처이모부' },
+  { pattern: 'W.F.B.C', casual: '처사촌', formal: '처종형제' },
+  { pattern: 'W.F.Z.C', casual: '처고종사촌' },
+  { pattern: 'W.M.B.C', casual: '처외사촌' },
+  { pattern: 'W.M.Z.C', casual: '처이종사촌' },
 
   // ── 시가 (남편의 가족) ─────────────────────────────────
   { pattern: 'H.F', casual: '시아버지', formal: '시부' },
@@ -164,6 +192,26 @@ export const RULES: KinshipRule[] = [
   { pattern: 'H.YZ.H', casual: '서방님', formal: '시누이 남편' },
   { pattern: 'H.B.C', casual: '조카', formal: '시조카' },
   { pattern: 'H.Z.C', casual: '조카', formal: '시조카' },
+
+  // ── 시가 확장: 조부모·백숙부·고모·이모·사촌 ────────────
+  { pattern: 'H.M.F', casual: '할아버님', formal: '시외조부' },
+  { pattern: 'H.M.M', casual: '할머님', formal: '시외조모' },
+  { pattern: 'H.F.OB', casual: '큰아버님', formal: '시백부' },
+  { pattern: 'H.F.YB', casual: '작은아버님', formal: '시숙부' },
+  { pattern: 'H.F.B', casual: '시삼촌', formal: '시숙부' },
+  { pattern: 'H.F.OB.W', casual: '큰어머님', formal: '시백모' },
+  { pattern: 'H.F.YB.W', casual: '작은어머님', formal: '시숙모' },
+  { pattern: 'H.F.B.W', casual: '시숙모' },
+  { pattern: 'H.F.Z', casual: '고모님', formal: '시고모' },
+  { pattern: 'H.F.Z.H', casual: '고모부님', formal: '시고모부' },
+  { pattern: 'H.M.B', casual: '외삼촌님', formal: '시외숙' },
+  { pattern: 'H.M.B.W', casual: '외숙모님', formal: '시외숙모' },
+  { pattern: 'H.M.Z', casual: '이모님', formal: '시이모' },
+  { pattern: 'H.M.Z.H', casual: '이모부님', formal: '시이모부' },
+  { pattern: 'H.F.B.C', casual: '시사촌', formal: '시종형제' },
+  { pattern: 'H.F.Z.C', casual: '시고종사촌' },
+  { pattern: 'H.M.B.C', casual: '시외사촌' },
+  { pattern: 'H.M.Z.C', casual: '시이종사촌' },
 ];
 
 /** pattern → 규칙 목록 (선언 순서 유지) */
