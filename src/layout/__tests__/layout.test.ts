@@ -38,6 +38,13 @@ function makeFixture(): FamilyData {
   marry('wF', 'wM');
   add('wife', '아내', 'female', 1991, 'wF', 'wM');
   marry('ego', 'wife');
+  // 형 + 형수의 원가족 (인척 트리가 여러 개 경쟁하는 상황)
+  add('brother', '형', 'male', 1988, 'father', 'mother');
+  add('bwF', '사돈댁아버지', 'male', 1958);
+  add('bwM', '사돈댁어머니', 'female', 1961);
+  marry('bwF', 'bwM');
+  add('brotherW', '형수', 'female', 1989, 'bwF', 'bwM');
+  marry('brother', 'brotherW');
   return { schemaVersion: 1, egoId: 'ego', persons };
 }
 
@@ -62,9 +69,10 @@ describe('인접 배치 (P1)', () => {
     }
   });
 
-  it('외가는 어머니 근처, 처가는 아내 근처에 배치된다', () => {
+  it('외가는 어머니 근처, 처가는 아내 근처, 형수 원가족은 형수 근처에 배치된다', () => {
     expect(Math.abs(centerX(layout, 'mgfa') - centerX(layout, 'mother'))).toBeLessThan(700);
     expect(Math.abs(centerX(layout, 'wF') - centerX(layout, 'wife'))).toBeLessThan(700);
+    expect(Math.abs(centerX(layout, 'bwF') - centerX(layout, 'brotherW'))).toBeLessThan(700);
   });
 
   it('모든 인물이 렌더된다 (접힘 없음)', () => {

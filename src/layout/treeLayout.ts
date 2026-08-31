@@ -196,12 +196,17 @@ export function layoutFamily(
   };
 
   // ── 인접 배치: ego 트리를 먼저, 인척 트리는 연결 인물 근처에 ──
-  const occupied = new Map<number, Array<[number, number]>>();
-  const addToOccupied = (root: LayoutUnit, dx: number) => {
-    for (const [g, iv] of treeExtents(root, dx)) {
+  const occupied = new Map<number, Array<{ owner: LayoutUnit; iv: [number, number] }>>();
+  const addToOccupied = (root: LayoutUnit) => {
+    for (const [g, iv] of treeExtents(root, 0)) {
       const list = occupied.get(g) ?? [];
-      list.push(iv);
+      list.push({ owner: root, iv });
       occupied.set(g, list);
+    }
+  };
+  const removeFromOccupied = (root: LayoutUnit) => {
+    for (const [g, list] of occupied) {
+      occupied.set(g, list.filter((e) => e.owner !== root));
     }
   };
   const translateTree = (root: LayoutUnit, dx: number) => {
@@ -212,7 +217,8 @@ export function layoutFamily(
   const overlapShift = (root: LayoutUnit, dx: number, dir: 1 | -1): number => {
     let need = 0;
     for (const [g, [a, b]] of treeExtents(root, dx)) {
-      for (const [c, d] of occupied.get(g) ?? []) {
+      for (const { owner, iv: [c, d] } of occupied.get(g) ?? []) {
+        if (owner === root) continue;
         if (a < d + BLOCK_MARGIN && b > c - BLOCK_MARGIN) {
           need = Math.max(need, dir === 1 ? d + BLOCK_MARGIN - a : b - (c - BLOCK_MARGIN));
         }
@@ -247,43 +253,68 @@ export function layoutFamily(
   for (const root of visibleRoots) layoutTree(root);
 
   const placedRoots = new Set<LayoutUnit>([egoRoot]);
-  addToOccupied(egoRoot, 0);
+  addToOccupied(egoRoot);
   let farRight = Math.max(
     ...[...treeExtents(egoRoot, 0).values()].map(([, b]) => b),
     0,
   );
 
+  /** 배치된 트리에 연결된 유효 연결부 (없으면 null) */
+  const placedConnector = (root: LayoutUnit) =>
+    (connectorsOf.get(root) ?? []).find(
+      (c) => !collapsed.has(c.memberId) && placedRoots.has(rootOfMember(c.memberId)),
+    ) ?? null;
+
   const pending = [...visibleRoots].filter((r) => r !== egoRoot);
   while (pending.length > 0) {
-    // 연결 인물이 이미 배치된 트리를 우선 선택
-    let idx = pending.findIndex((r) =>
-      (connectorsOf.get(r) ?? []).some(
-        (c) => !collapsed.has(c.memberId) && placedRoots.has(rootOfMember(c.memberId)),
-      ),
-    );
+    // 배치 가능한 트리 중 연결 인물이 가장 왼쪽인 것부터 배치해 밀어내기 누적을 줄인다
+    const candidates = pending
+      .map((r) => {
+        const conn = placedConnector(r);
+        return conn ? { r, conn, mx: memberCenterX(conn.memberId) } : null;
+      })
+      .filter((c): c is NonNullable<typeof c> => c !== null)
+      .sort((a, b) => a.mx - b.mx);
+
+    let root: LayoutUnit;
     let dx: number;
-    if (idx === -1) {
+    if (candidates.length === 0) {
       // 연결부 없는 트리(비정상 데이터 등)는 오른쪽 끝에 순차 배치
-      idx = 0;
-      const root = pending[idx];
+      root = pending[0];
       const minX = Math.min(...[...treeExtents(root, 0).values()].map(([a]) => a));
       dx = farRight + TREE_GAP - minX;
     } else {
-      const root = pending[idx];
-      const conn = (connectorsOf.get(root) ?? []).find(
-        (c) => !collapsed.has(c.memberId) && placedRoots.has(rootOfMember(c.memberId)),
-      )!;
-      const desired = memberCenterX(conn.memberId) - conn.parentUnit.x;
-      dx = resolveCollision(root, desired);
+      root = candidates[0].r;
+      dx = resolveCollision(root, candidates[0].mx - candidates[0].conn.parentUnit.x);
     }
-    const root = pending.splice(idx, 1)[0];
+    pending.splice(pending.indexOf(root), 1);
     translateTree(root, dx);
-    addToOccupied(root, 0);
+    addToOccupied(root);
     farRight = Math.max(
       farRight,
       ...[...treeExtents(root, 0).values()].map(([, b]) => b),
     );
     placedRoots.add(root);
+  }
+
+  // ── 이완(relax) 패스: 배치가 끝난 뒤 각 트리를 연결 인물 쪽으로 다시 당김 ──
+  for (let pass = 0; pass < 2; pass++) {
+    const relaxable = [...placedRoots]
+      .filter((r) => r !== egoRoot)
+      .map((r) => {
+        const conn = placedConnector(r);
+        return conn ? { r, conn } : null;
+      })
+      .filter((c): c is NonNullable<typeof c> => c !== null)
+      .sort((a, b) => memberCenterX(a.conn.memberId) - memberCenterX(b.conn.memberId));
+    for (const { r, conn } of relaxable) {
+      const delta = memberCenterX(conn.memberId) - conn.parentUnit.x;
+      if (Math.abs(delta) < 1) continue;
+      removeFromOccupied(r);
+      const d = resolveCollision(r, delta);
+      translateTree(r, d);
+      addToOccupied(r);
+    }
   }
 
   // ── 좌표 산출 (보이는 유닛만) ─────────────────────────
