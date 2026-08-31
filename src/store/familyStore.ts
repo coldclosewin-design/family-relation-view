@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { FamilyData } from '../model/types';
+import { normalizeParentLinks } from '../model/normalize';
 import {
   addRelative,
   createInitialData,
@@ -138,7 +139,12 @@ export const useFamilyStore = create<FamilyStore>()(
       closeDialog: () => set({ dialogAnchorId: null }),
 
       importData: (data) =>
-        set({ data, baseId: undefined, targetId: undefined, dialogAnchorId: null }),
+        set({
+          data: normalizeParentLinks(data),
+          baseId: undefined,
+          targetId: undefined,
+          dialogAnchorId: null,
+        }),
 
       reset: () => set({ data: null, baseId: undefined, targetId: undefined, dialogAnchorId: null }),
 
@@ -173,6 +179,15 @@ export const useFamilyStore = create<FamilyStore>()(
     }),
     {
       name: 'family-relation-view:data:v1',
+      // 과거 버전 데이터의 반쪽 부모 연결을 로드 시점에 복구
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<FamilyStore>;
+        return {
+          ...current,
+          ...p,
+          data: p.data ? normalizeParentLinks(p.data) : current.data,
+        };
+      },
       partialize: (state) => ({
         data: state.data,
         labelMode: state.labelMode,

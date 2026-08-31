@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { addRelative, canAddRelative, createInitialData, setSiblingOrder } from '../mutations';
 import { buildGraph } from '../familyGraph';
+import { normalizeParentLinks } from '../normalize';
+import type { FamilyData, Person } from '../types';
 import { computeKinship } from '../../kinship/resolver';
 
 /** 출생년도 없이 관계 선택(placement)만으로 형/동생이 판정되는지 */
@@ -69,5 +71,42 @@ describe('출생년도 없는 형제 순서', () => {
     d = addRelative(d, ego, 'sibling', { name: '형', gender: 'male', birthYear: 1988 }, 'younger');
     const g = buildGraph(d);
     expect(computeKinship(g, ego, idOf(d, '형')).casual).toBe('형');
+  });
+});
+
+describe('반쪽 부모 연결 정규화 (과거 버그 데이터 복구)', () => {
+  /** 장모가 장인의 배우자로만 등록되고 아내의 어머니로는 연결되지 않은 형태 */
+  const legacyData = (): FamilyData => {
+    const p = (partial: Partial<Person> & Pick<Person, 'id' | 'name' | 'gender'>): Person => ({
+      spouseIds: [],
+      ...partial,
+    });
+    return {
+      schemaVersion: 1,
+      egoId: 'ego',
+      persons: {
+        ego: p({ id: 'ego', name: '나', gender: 'male', spouseIds: ['wife'] }),
+        wife: p({ id: 'wife', name: '아내', gender: 'female', fatherId: 'wF', spouseIds: ['ego'] }),
+        wF: p({ id: 'wF', name: '장인', gender: 'male', spouseIds: ['wM'] }),
+        wM: p({ id: 'wM', name: '장모', gender: 'female', spouseIds: ['wF'] }),
+      },
+    };
+  };
+
+  it('장모가 아내의 어머니로 복구되어 장모님으로 계산된다', () => {
+    const raw = legacyData();
+    const g0 = buildGraph(raw);
+    // 복구 전에는 폴백 표현이 나온다
+    expect(computeKinship(g0, 'ego', 'wM').casual).toBe('처가 쪽 새어머니');
+
+    const fixed = normalizeParentLinks(raw);
+    expect(fixed.persons['wife'].motherId).toBe('wM');
+    const g = buildGraph(fixed);
+    expect(computeKinship(g, 'ego', 'wM')).toMatchObject({ casual: '장모님', formal: '장모' });
+  });
+
+  it('고칠 것이 없으면 원본 객체를 그대로 반환한다', () => {
+    const fixed = normalizeParentLinks(legacyData());
+    expect(normalizeParentLinks(fixed)).toBe(fixed);
   });
 });
