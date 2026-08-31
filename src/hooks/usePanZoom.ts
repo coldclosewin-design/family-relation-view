@@ -138,5 +138,23 @@ export function usePanZoom(initial: ViewBox) {
   /** 드래그 직후 click 이벤트에서 배경 클릭(선택 해제)과 팬을 구분 */
   const wasDragged = useCallback(() => moved.current, []);
 
-  return { viewBox, onWheel, onPointerDown, onPointerMove, onPointerUp, fit, centerOn, wasDragged };
+  /**
+   * 노드가 pointerdown을 가로채(stopPropagation) 팬이 시작되지 않는 경우,
+   * 이전 팬의 moved 플래그가 남아 클릭이 무시되지 않도록 리셋
+   */
+  const resetMoved = useCallback(() => {
+    moved.current = false;
+  }, []);
+
+  return {
+    viewBox,
+    onWheel,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    fit,
+    centerOn,
+    wasDragged,
+    resetMoved,
+  };
 }

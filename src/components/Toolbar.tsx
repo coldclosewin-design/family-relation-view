@@ -10,6 +10,7 @@ export function Toolbar() {
   const importData = useFamilyStore((s) => s.importData);
   const reset = useFamilyStore((s) => s.reset);
   const setError = useFamilyStore((s) => s.setError);
+  const setHelpOpen = useFamilyStore((s) => s.setHelpOpen);
   const fileRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const cycleRef = useRef(0);
@@ -60,6 +61,9 @@ export function Toolbar() {
         </div>
       )}
       <div className="toolbar-actions">
+        <button className="help-btn" title="사용 가이드" onClick={() => setHelpOpen(true)}>
+          ?
+        </button>
         {data && (
           <button
             className={labelMode ? 'toggled' : ''}

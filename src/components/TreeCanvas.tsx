@@ -55,8 +55,17 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const layout = useMemo(() => layoutFamily(graph), [graph]);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const { viewBox, onWheel, onPointerDown, onPointerMove, onPointerUp, fit, centerOn, wasDragged } =
-    usePanZoom({ x: -200, y: -100, w: 1200, h: 800 });
+  const {
+    viewBox,
+    onWheel,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    fit,
+    centerOn,
+    wasDragged,
+    resetMoved,
+  } = usePanZoom({ x: -200, y: -100, w: 1200, h: 800 });
   const viewBoxRef = useRef(viewBox);
   viewBoxRef.current = viewBox;
 
@@ -170,6 +179,8 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
       .filter((l) => l.parentUnitId === myLink.parentUnitId)
       .map((l) => l.childId);
     if (siblings.length < 2) return;
+    // pointerdown을 가로채므로 svg 팬 핸들러가 못 도는 대신, 이전 팬의 드래그 플래그를 직접 리셋
+    resetMoved();
     e.stopPropagation();
     const withCenters = siblings
       .map((id) => ({ id, cx: layout.positions.get(id)!.x + NODE_W / 2 }))

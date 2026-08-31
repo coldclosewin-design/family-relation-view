@@ -26,6 +26,7 @@ export function ResultPanel({ data }: { data: FamilyData }) {
   const baseId = useFamilyStore((s) => s.baseId);
   const targetId = useFamilyStore((s) => s.targetId);
   const swapSelection = useFamilyStore((s) => s.swapSelection);
+  const clearSelection = useFamilyStore((s) => s.clearSelection);
 
   const graph = useMemo(() => buildGraph(data), [data]);
 
@@ -83,6 +84,9 @@ export function ResultPanel({ data }: { data: FamilyData }) {
           ⇄
         </button>
         <span className="chip target">{target.name}</span>
+        <button className="clear-btn" title="선택 해제" onClick={clearSelection}>
+          ✕
+        </button>
       </div>
 
       <div className="result-main">
@@ -111,6 +115,7 @@ export function ResultPanel({ data }: { data: FamilyData }) {
         <span className="reverse-label">반대로 {target.name} → {base.name}</span>
         <TermLine casual={reverse.casual} formal={reverse.formal} />
       </div>
+      <p className="panel-tip">다른 카드를 누르면 상대가 바뀌어요 · ✕ 또는 배경 클릭으로 해제</p>
     </aside>
   );
 }

@@ -4,6 +4,7 @@ import { Toolbar } from './components/Toolbar';
 import { TreeCanvas } from './components/TreeCanvas';
 import { ResultPanel } from './components/ResultPanel';
 import { AddRelativeDialog } from './components/AddRelativeDialog';
+import { HelpDialog } from './components/HelpDialog';
 import { Onboarding } from './components/Onboarding';
 
 function Toast() {
@@ -25,6 +26,14 @@ function Toast() {
 export default function App() {
   const data = useFamilyStore((s) => s.data);
   const dialogAnchorId = useFamilyStore((s) => s.dialogAnchorId);
+  const hasSeenHelp = useFamilyStore((s) => s.hasSeenHelp);
+  const setHelpOpen = useFamilyStore((s) => s.setHelpOpen);
+
+  // 첫 가족 생성 직후 사용 가이드를 한 번만 자동 표시
+  const hasData = data !== null;
+  useEffect(() => {
+    if (hasData && !hasSeenHelp) setHelpOpen(true);
+  }, [hasData, hasSeenHelp, setHelpOpen]);
 
   return (
     <div className="app">
@@ -38,6 +47,7 @@ export default function App() {
         <Onboarding />
       )}
       {data && dialogAnchorId && <AddRelativeDialog data={data} anchorId={dialogAnchorId} />}
+      <HelpDialog />
       <Toast />
     </div>
   );

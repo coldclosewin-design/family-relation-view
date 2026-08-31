@@ -24,6 +24,9 @@ interface FamilyStore {
   labelMode: boolean;
   /** 검색 점프 등 특정 인물로 화면 이동 요청 */
   focusRequest: { id: string; nonce: number } | null;
+  helpOpen: boolean;
+  /** 도움말을 한 번이라도 봤는지 (첫 방문 자동 표시용, 저장됨) */
+  hasSeenHelp: boolean;
 
   start: (form: PersonForm) => void;
   addRelative: (
@@ -45,6 +48,7 @@ interface FamilyStore {
   setError: (msg: string | null) => void;
   toggleLabelMode: () => void;
   focusPerson: (id: string) => void;
+  setHelpOpen: (open: boolean) => void;
 }
 
 export const useFamilyStore = create<FamilyStore>()(
@@ -57,6 +61,8 @@ export const useFamilyStore = create<FamilyStore>()(
       error: null,
       labelMode: false,
       focusRequest: null,
+      helpOpen: false,
+      hasSeenHelp: false,
 
       start: (form) => set({ data: createInitialData(form) }),
 
@@ -130,10 +136,16 @@ export const useFamilyStore = create<FamilyStore>()(
 
       focusPerson: (id) =>
         set({ focusRequest: { id, nonce: (get().focusRequest?.nonce ?? 0) + 1 } }),
+
+      setHelpOpen: (open) => set({ helpOpen: open, hasSeenHelp: get().hasSeenHelp || open }),
     }),
     {
       name: 'family-relation-view:data:v1',
-      partialize: (state) => ({ data: state.data, labelMode: state.labelMode }),
+      partialize: (state) => ({
+        data: state.data,
+        labelMode: state.labelMode,
+        hasSeenHelp: state.hasSeenHelp,
+      }),
     },
   ),
 );
