@@ -10,6 +10,8 @@ import type { FamilyData } from '../model/types';
 
 const BUS_OFFSET = 18;
 const DRAG_THRESHOLD_PX = 6;
+/** '나' 버튼·검색 점프 시 확대 포커스 뷰 너비 (svg 단위, 카드 6~7장 폭) */
+const FOCUS_VIEW_W = 640;
 
 interface DragState {
   personId: string;
@@ -110,7 +112,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
     if (!focusRequest) return;
     const pos = layoutRef.current.positions.get(focusRequest.id);
     if (!pos) return;
-    centerOn(pos.x + NODE_W / 2, pos.y + NODE_H / 2);
+    centerOn(pos.x + NODE_W / 2, pos.y + NODE_H / 2, FOCUS_VIEW_W);
     setFlashId(focusRequest.id);
     const t = setTimeout(() => setFlashId(null), 1800);
     return () => clearTimeout(t);
@@ -426,10 +428,10 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
       <div className="canvas-controls">
         <button title="전체 보기" onClick={fitAll}>⛶</button>
         <button
-          title="나에게 이동"
+          title="나에게 확대 이동"
           onClick={() => {
             const pos = layout.positions.get(data.egoId);
-            if (pos) centerOn(pos.x + NODE_W / 2, pos.y + NODE_H / 2);
+            if (pos) centerOn(pos.x + NODE_W / 2, pos.y + NODE_H / 2, FOCUS_VIEW_W);
           }}
         >
           나

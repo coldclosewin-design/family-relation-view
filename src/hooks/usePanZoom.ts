@@ -130,9 +130,16 @@ export function usePanZoom(initial: ViewBox) {
     [],
   );
 
-  /** 현재 줌 배율을 유지한 채 특정 지점을 화면 중앙으로 */
-  const centerOn = useCallback((cx: number, cy: number) => {
-    setViewBox((vb) => ({ ...vb, x: cx - vb.w / 2, y: cy - vb.h / 2 }));
+  /**
+   * 특정 지점을 화면 중앙으로. targetW를 주면 그 너비로 확대/축소해
+   * 포커스 뷰를 만들고, 생략하면 현재 줌 배율 유지
+   */
+  const centerOn = useCallback((cx: number, cy: number, targetW?: number) => {
+    setViewBox((vb) => {
+      const w = targetW !== undefined ? Math.min(MAX_W, Math.max(MIN_W, targetW)) : vb.w;
+      const h = vb.h * (w / vb.w);
+      return { x: cx - w / 2, y: cy - h / 2, w, h };
+    });
   }, []);
 
   /** 드래그 직후 click 이벤트에서 배경 클릭(선택 해제)과 팬을 구분 */
