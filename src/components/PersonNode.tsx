@@ -40,10 +40,10 @@ export function PersonNode({
     .join(' ');
 
   const hasYear = person.birthYear != null;
-  // 긴 이름은 카드 폭에 맞춰 압축
+  // 알약형 카드의 곡면을 피해, 긴 이름은 카드 폭에 맞춰 압축
   const nameLenProps =
-    person.name.length > 5
-      ? { textLength: NODE_W - 12, lengthAdjust: 'spacingAndGlyphs' as const }
+    person.name.length > 4
+      ? { textLength: NODE_W - 26, lengthAdjust: 'spacingAndGlyphs' as const }
       : {};
 
   return (
@@ -56,7 +56,7 @@ export function PersonNode({
       }}
       onPointerDown={(e) => onDragStart?.(person.id, e)}
     >
-      <rect className="person-card" width={NODE_W} height={NODE_H} rx={8} />
+      <rect className="person-card" width={NODE_W} height={NODE_H} rx={NODE_H / 2} />
       <text
         className="person-name"
         x={NODE_W / 2}
@@ -72,7 +72,7 @@ export function PersonNode({
         </text>
       )}
       {isEgo && (
-        <g className="ego-badge" transform="translate(6, -6)">
+        <g className="ego-badge" transform="translate(12, -6)">
           <rect width={22} height={14} rx={7} />
           <text x={11} y={11} textAnchor="middle">나</text>
         </g>
@@ -80,7 +80,7 @@ export function PersonNode({
       {!ghost && (
         <g
           className="add-btn"
-          transform={`translate(${NODE_W - 2}, 2)`}
+          transform={`translate(${NODE_W - 10}, 4)`}
           onClick={(e) => {
             e.stopPropagation();
             onOpenDialog?.(person.id);

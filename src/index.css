@@ -29,6 +29,7 @@ body,
 body {
   background: var(--bg);
   overscroll-behavior: none;
+  word-break: keep-all;
 }
 
 .app {
@@ -140,17 +141,17 @@ button.danger {
 .person-card {
   fill: #fff;
   stroke: #cfc9bc;
-  stroke-width: 1.5;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
+  stroke-width: 1.4;
+  filter: drop-shadow(0 2px 3px rgba(80, 60, 20, 0.1));
 }
 
 .person-node.male .person-card {
-  fill: var(--male-fill);
+  fill: url(#grad-male);
   stroke: var(--male-stroke);
 }
 
 .person-node.female .person-card {
-  fill: var(--female-fill);
+  fill: url(#grad-female);
   stroke: var(--female-stroke);
 }
 
@@ -259,7 +260,41 @@ button.danger {
 }
 
 .hint.sub {
-  font-size: 12.5px;
+  font-size: 12px;
+}
+
+.hint-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.hint-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.step-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ece7da;
+  color: #6b6455;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.step-arrow {
+  color: var(--muted);
 }
 
 .chip {
@@ -548,8 +583,12 @@ button.danger {
   }
 
   .result-panel.empty {
-    padding: 14px 18px;
-    gap: 4px;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .result-panel.empty .hint-title {
+    font-size: 14px;
   }
 
   .result-term {

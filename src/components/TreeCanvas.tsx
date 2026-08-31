@@ -215,6 +215,16 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
         if (!wasDragged() && !suppressClick.current) clearSelection();
       }}
     >
+      <defs>
+        <linearGradient id="grad-male" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f2f7fe" />
+          <stop offset="1" stopColor="#d9e9fb" />
+        </linearGradient>
+        <linearGradient id="grad-female" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fef4f7" />
+          <stop offset="1" stopColor="#fbdde7" />
+        </linearGradient>
+      </defs>
       <g className="edges">
         {couplePaths.map((c) => (
           <g key={c.key} className="couple-line">

@@ -2,7 +2,7 @@ import { compareSiblings, type FamilyGraph } from '../model/familyGraph';
 import { assignGenerations, bloodDistances } from './generations';
 import { deriveCoupleUnits, type CoupleUnit } from './coupleUnits';
 
-export const NODE_W = 84;
+export const NODE_W = 88;
 export const NODE_H = 48;
 export const COUPLE_GAP = 12;
 export const H_GAP = 22;

@@ -33,11 +33,18 @@ export function ResultPanel({ data }: { data: FamilyData }) {
     return (
       <aside className="result-panel empty">
         <p className="hint-title">호칭 알아보기</p>
-        <p className="hint">
-          관계도에서 <span className="chip base">기준 인물</span>을 먼저 클릭하고,
-          이어서 <span className="chip target">상대 인물</span>을 클릭하세요.
-        </p>
-        <p className="hint sub">카드 오른쪽 위 <b>+</b> 버튼으로 가족을 추가할 수 있어요.</p>
+        <div className="hint-steps">
+          <span className="hint-step">
+            <span className="step-no">1</span>
+            <span className="chip base">기준 인물</span> 클릭
+          </span>
+          <span className="step-arrow">→</span>
+          <span className="hint-step">
+            <span className="step-no">2</span>
+            <span className="chip target">상대 인물</span> 클릭
+          </span>
+        </div>
+        <p className="hint sub">가족 추가는 카드의 ＋ 버튼</p>
       </aside>
     );
   }
@@ -46,12 +53,16 @@ export function ResultPanel({ data }: { data: FamilyData }) {
   if (!targetId) {
     return (
       <aside className="result-panel empty">
-        <p className="hint">
-          기준: <span className="chip base">{base.name}</span>
-        </p>
-        <p className="hint">
-          이제 <span className="chip target">상대 인물</span>을 클릭하면 호칭을 알려드려요.
-        </p>
+        <div className="hint-steps">
+          <span className="hint-step">
+            <span className="chip base">{base.name}</span>
+          </span>
+          <span className="step-arrow">→</span>
+          <span className="hint-step">
+            <span className="chip target">상대 인물</span> 클릭
+          </span>
+        </div>
+        <p className="hint sub">상대를 고르면 호칭을 알려드려요</p>
       </aside>
     );
   }
