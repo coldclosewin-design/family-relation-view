@@ -7,15 +7,19 @@ export interface FamilyGraph {
   childrenIndex: Map<string, string[]>;
 }
 
+/** 형제 정렬: siblingRank → 출생년도 → 이름 */
+export function compareSiblings(pa: Person, pb: Person): number {
+  const ra = pa.siblingRank ?? Number.MAX_SAFE_INTEGER;
+  const rb = pb.siblingRank ?? Number.MAX_SAFE_INTEGER;
+  if (ra !== rb) return ra - rb;
+  const ya = pa.birthYear ?? Number.MAX_SAFE_INTEGER;
+  const yb = pb.birthYear ?? Number.MAX_SAFE_INTEGER;
+  if (ya !== yb) return ya - yb;
+  return pa.name.localeCompare(pb.name, 'ko');
+}
+
 function byBirthThenName(persons: Record<string, Person>) {
-  return (a: string, b: string) => {
-    const pa = persons[a];
-    const pb = persons[b];
-    const ya = pa.birthYear ?? Number.MAX_SAFE_INTEGER;
-    const yb = pb.birthYear ?? Number.MAX_SAFE_INTEGER;
-    if (ya !== yb) return ya - yb;
-    return pa.name.localeCompare(pb.name, 'ko');
-  };
+  return (a: string, b: string) => compareSiblings(persons[a], persons[b]);
 }
 
 export function buildGraph(data: FamilyData): FamilyGraph {

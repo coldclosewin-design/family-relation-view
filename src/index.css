@@ -156,22 +156,43 @@ button.danger {
 
 .person-node.sel-base .person-card {
   stroke: var(--base);
-  stroke-width: 3.5;
+  stroke-width: 3;
 }
 
 .person-node.sel-target .person-card {
   stroke: var(--target);
-  stroke-width: 3.5;
+  stroke-width: 3;
+}
+
+.person-node.drag-source {
+  opacity: 0.3;
+}
+
+.person-node.drag-ghost {
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.person-node.drag-ghost .person-card {
+  stroke: var(--base);
+  stroke-width: 2;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
+}
+
+.insert-indicator {
+  stroke: var(--base);
+  stroke-width: 3;
+  stroke-linecap: round;
 }
 
 .person-name {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   fill: var(--ink);
 }
 
 .person-year {
-  font-size: 11px;
+  font-size: 10px;
   fill: var(--muted);
 }
 
@@ -180,7 +201,7 @@ button.danger {
 }
 
 .ego-badge text {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   fill: #fff;
 }
@@ -192,7 +213,7 @@ button.danger {
 }
 
 .add-btn text {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   fill: #6b6559;
 }
@@ -435,6 +456,24 @@ button.danger {
   align-items: center;
   gap: 5px;
   font-weight: 400;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.choice-chip {
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 13px;
+}
+
+.choice-chip.active {
+  background: var(--base);
+  border-color: var(--base);
+  color: #fff;
 }
 
 .optional {

@@ -1,13 +1,13 @@
-import type { FamilyGraph } from '../model/familyGraph';
+import { compareSiblings, type FamilyGraph } from '../model/familyGraph';
 import { assignGenerations, bloodDistances } from './generations';
 import { deriveCoupleUnits, type CoupleUnit } from './coupleUnits';
 
-export const NODE_W = 110;
-export const NODE_H = 64;
-export const COUPLE_GAP = 20;
-export const H_GAP = 34;
-export const LEVEL_H = 150;
-export const TREE_GAP = 90;
+export const NODE_W = 84;
+export const NODE_H = 48;
+export const COUPLE_GAP = 12;
+export const H_GAP = 22;
+export const LEVEL_H = 112;
+export const TREE_GAP = 60;
 
 interface LayoutUnit extends CoupleUnit {
   x: number; // 유닛 중심
@@ -73,16 +73,11 @@ export function layoutFamily(graph: FamilyGraph): LayoutResult {
     }
   }
 
-  // 자녀 유닛 정렬: 연결 멤버의 출생년 → 이름
+  // 자녀 유닛 정렬: 연결 멤버의 siblingRank → 출생년 → 이름
   for (const u of lunits.values()) {
-    u.children.sort((a, b) => {
-      const pa = graph.persons[a.connectingChildId!];
-      const pb = graph.persons[b.connectingChildId!];
-      const ya = pa.birthYear ?? Number.MAX_SAFE_INTEGER;
-      const yb = pb.birthYear ?? Number.MAX_SAFE_INTEGER;
-      if (ya !== yb) return ya - yb;
-      return pa.name.localeCompare(pb.name, 'ko');
-    });
+    u.children.sort((a, b) =>
+      compareSiblings(graph.persons[a.connectingChildId!], graph.persons[b.connectingChildId!]),
+    );
   }
 
   // 트리(루트) 수집: ego가 속한 트리 먼저

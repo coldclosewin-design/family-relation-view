@@ -20,12 +20,20 @@ export interface RelStep {
 
 function siblingToken(anchor: Person, sib: Person): RelToken {
   const male = sib.gender === 'male';
+  // 출생년도가 우선, 없으면 사용자가 명시한 형제 순서(siblingRank)로 판단
+  let elder: boolean | null = null;
   if (anchor.birthYear != null && sib.birthYear != null && anchor.birthYear !== sib.birthYear) {
-    const elder = sib.birthYear < anchor.birthYear;
-    if (male) return elder ? 'OB' : 'YB';
-    return elder ? 'OZ' : 'YZ';
+    elder = sib.birthYear < anchor.birthYear;
+  } else if (
+    anchor.siblingRank != null &&
+    sib.siblingRank != null &&
+    anchor.siblingRank !== sib.siblingRank
+  ) {
+    elder = sib.siblingRank < anchor.siblingRank;
   }
-  return male ? 'B' : 'Z';
+  if (elder === null) return male ? 'B' : 'Z';
+  if (male) return elder ? 'OB' : 'YB';
+  return elder ? 'OZ' : 'YZ';
 }
 
 /**

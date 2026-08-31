@@ -1,7 +1,26 @@
 import { useState } from 'react';
-import { canAddRelative, type PersonForm, type RelativeKind } from '../model/mutations';
+import {
+  canAddRelative,
+  type PersonForm,
+  type RelativeKind,
+  type SiblingPlacement,
+} from '../model/mutations';
 import type { FamilyData, Gender } from '../model/types';
 import { useFamilyStore } from '../store/familyStore';
+
+/** 형제자매 추가 시 관계 선택지: 성별 + 손위/손아래를 한 번에 */
+type SibChoice = 'elder-male' | 'elder-female' | 'younger-male' | 'younger-female' | 'unknown';
+
+function sibChoices(anchorGender: Gender): Array<{ key: SibChoice; label: string }> {
+  const female = anchorGender === 'female';
+  return [
+    { key: 'elder-male', label: female ? '오빠' : '형' },
+    { key: 'elder-female', label: female ? '언니' : '누나' },
+    { key: 'younger-male', label: '남동생' },
+    { key: 'younger-female', label: '여동생' },
+    { key: 'unknown', label: '순서 모름' },
+  ];
+}
 
 const KIND_LABELS: Array<{ kind: RelativeKind; label: string }> = [
   { kind: 'father', label: '아버지 추가' },
@@ -25,6 +44,7 @@ export function AddRelativeDialog({ data, anchorId }: { data: FamilyData; anchor
   const [name, setName] = useState('');
   const [gender, setGender] = useState<Gender>('male');
   const [birthYear, setBirthYear] = useState('');
+  const [sibChoice, setSibChoice] = useState<SibChoice | null>(null);
 
   if (!anchor) return null;
 
@@ -35,6 +55,7 @@ export function AddRelativeDialog({ data, anchorId }: { data: FamilyData; anchor
     else if (kind === 'spouse') setGender(anchor.gender === 'male' ? 'female' : 'male');
     else setGender('male');
     setBirthYear('');
+    setSibChoice(null);
     setMode({ view: 'form', kind });
   };
 
@@ -45,18 +66,32 @@ export function AddRelativeDialog({ data, anchorId }: { data: FamilyData; anchor
     setMode({ view: 'edit' });
   };
 
+  const isSibling = mode.view === 'form' && mode.kind === 'sibling';
+
   const buildForm = (): PersonForm | null => {
     if (!name.trim()) return null;
+    if (isSibling && sibChoice === null) return null;
     const year = birthYear.trim() === '' ? undefined : Number(birthYear);
     if (year !== undefined && (!Number.isInteger(year) || year < 1800 || year > 2200)) return null;
-    return { name: name.trim(), gender, birthYear: year };
+    const g: Gender =
+      isSibling && sibChoice && sibChoice !== 'unknown'
+        ? sibChoice === 'elder-male' || sibChoice === 'younger-male' ? 'male' : 'female'
+        : gender;
+    return { name: name.trim(), gender: g, birthYear: year };
   };
 
   const submit = () => {
     const form = buildForm();
     if (!form) return;
-    if (mode.view === 'form') addRelative(anchorId, mode.kind, form);
-    else if (mode.view === 'edit') updatePerson(anchorId, form);
+    if (mode.view === 'form') {
+      const placement: SiblingPlacement | undefined =
+        isSibling && sibChoice && sibChoice !== 'unknown'
+          ? sibChoice.startsWith('elder') ? 'elder' : 'younger'
+          : undefined;
+      addRelative(anchorId, mode.kind, form, placement);
+    } else if (mode.view === 'edit') {
+      updatePerson(anchorId, form);
+    }
   };
 
   const genderLocked =
@@ -128,25 +163,44 @@ export function AddRelativeDialog({ data, anchorId }: { data: FamilyData; anchor
                   placeholder="예: 김철수, 고모1"
                 />
               </label>
-              <fieldset disabled={genderLocked}>
-                <legend>성별</legend>
-                <label className="radio">
-                  <input
-                    type="radio"
-                    checked={gender === 'male'}
-                    onChange={() => setGender('male')}
-                  />
-                  남
-                </label>
-                <label className="radio">
-                  <input
-                    type="radio"
-                    checked={gender === 'female'}
-                    onChange={() => setGender('female')}
-                  />
-                  여
-                </label>
-              </fieldset>
+              {isSibling && (
+                <fieldset>
+                  <legend>{anchor.name} 기준 관계</legend>
+                  <div className="chip-group">
+                    {sibChoices(anchor.gender).map(({ key, label }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`choice-chip ${sibChoice === key ? 'active' : ''}`}
+                        onClick={() => setSibChoice(key)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+              {(!isSibling || sibChoice === 'unknown') && (
+                <fieldset disabled={genderLocked}>
+                  <legend>성별</legend>
+                  <label className="radio">
+                    <input
+                      type="radio"
+                      checked={gender === 'male'}
+                      onChange={() => setGender('male')}
+                    />
+                    남
+                  </label>
+                  <label className="radio">
+                    <input
+                      type="radio"
+                      checked={gender === 'female'}
+                      onChange={() => setGender('female')}
+                    />
+                    여
+                  </label>
+                </fieldset>
+              )}
               <label>
                 출생년도 <span className="optional">(선택 — 형/동생 구분에 사용)</span>
                 <input

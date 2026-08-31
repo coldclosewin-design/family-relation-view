@@ -1,6 +1,10 @@
+import { compareSiblings } from './familyGraph';
 import type { FamilyData, Gender, Person } from './types';
 
 export type RelativeKind = 'father' | 'mother' | 'spouse' | 'child' | 'sibling';
+
+/** 형제자매 추가 시 앵커 기준 손위/손아래 (미지정 = 순서 모름) */
+export type SiblingPlacement = 'elder' | 'younger';
 
 export interface PersonForm {
   name: string;
@@ -49,11 +53,21 @@ export function canAddRelative(data: FamilyData, anchorId: string, kind: Relativ
   }
 }
 
+/** 같은 부모 조합을 가진 형제 그룹 (본인 포함), 표시 순서로 정렬 */
+export function siblingGroupOf(data: FamilyData, personId: string): Person[] {
+  const p = data.persons[personId];
+  if (!p || (!p.fatherId && !p.motherId)) return [];
+  return Object.values(data.persons)
+    .filter((q) => q.fatherId === p.fatherId && q.motherId === p.motherId)
+    .sort(compareSiblings);
+}
+
 export function addRelative(
   data: FamilyData,
   anchorId: string,
   kind: RelativeKind,
   form: PersonForm,
+  placement?: SiblingPlacement,
 ): FamilyData {
   const reason = canAddRelative(data, anchorId, kind);
   if (reason) throw new MutationError(reason);
@@ -104,9 +118,28 @@ export function addRelative(
     case 'sibling': {
       person.fatherId = anchor.fatherId;
       person.motherId = anchor.motherId;
+      if (placement) {
+        // 앵커 바로 앞/뒤에 끼워 넣고 그룹 전체에 순서를 다시 부여
+        const group = siblingGroupOf(next, anchorId).filter((p) => p.id !== person.id);
+        const anchorIdx = group.findIndex((p) => p.id === anchorId);
+        group.splice(placement === 'elder' ? anchorIdx : anchorIdx + 1, 0, person);
+        group.forEach((p, i) => {
+          p.siblingRank = i;
+        });
+      }
       break;
     }
   }
+  return next;
+}
+
+/** 드래그 정렬 결과 반영: 형제 그룹 전체에 표시 순서대로 siblingRank 부여 */
+export function setSiblingOrder(data: FamilyData, orderedIds: string[]): FamilyData {
+  const next = clone(data);
+  orderedIds.forEach((id, i) => {
+    const p = next.persons[id];
+    if (p) p.siblingRank = i;
+  });
   return next;
 }
 

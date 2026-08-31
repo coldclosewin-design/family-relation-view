@@ -1,12 +1,29 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildGraph } from '../model/familyGraph';
-import { layoutFamily, NODE_H, NODE_W } from '../layout/treeLayout';
+import { layoutFamily, H_GAP, NODE_H, NODE_W } from '../layout/treeLayout';
 import { usePanZoom } from '../hooks/usePanZoom';
 import { useFamilyStore } from '../store/familyStore';
 import { PersonNode } from './PersonNode';
 import type { FamilyData } from '../model/types';
 
-const BUS_OFFSET = 26;
+const BUS_OFFSET = 18;
+const DRAG_THRESHOLD_PX = 6;
+
+interface DragState {
+  personId: string;
+  pointerId: number;
+  /** 형제 그룹 (표시 순서, 드래그 대상 포함) */
+  groupIds: string[];
+  /** groupIds와 짝을 이루는 카드 중심 x */
+  slotCenters: number[];
+  rowY: number;
+  /** 포인터(svg 좌표) - 카드 좌상단 오프셋 */
+  offsetX: number;
+  offsetY: number;
+  pointer: { x: number; y: number };
+  startClient: { x: number; y: number };
+  active: boolean;
+}
 
 export function TreeCanvas({ data }: { data: FamilyData }) {
   const baseId = useFamilyStore((s) => s.baseId);
@@ -14,6 +31,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const selectPerson = useFamilyStore((s) => s.selectPerson);
   const clearSelection = useFamilyStore((s) => s.clearSelection);
   const openDialog = useFamilyStore((s) => s.openDialog);
+  const reorderSiblings = useFamilyStore((s) => s.reorderSiblings);
 
   const graph = useMemo(() => buildGraph(data), [data]);
   const layout = useMemo(() => layoutFamily(graph), [graph]);
@@ -21,6 +39,8 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
 
   const { viewBox, onWheel, onPointerDown, onPointerMove, onPointerUp, fit, wasDragged } =
     usePanZoom({ x: -200, y: -100, w: 1200, h: 800 });
+  const viewBoxRef = useRef(viewBox);
+  viewBoxRef.current = viewBox;
 
   const personCount = Object.keys(data.persons).length;
   const fitRef = useRef(fit);
@@ -45,6 +65,103 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
     return () => cancelAnimationFrame(raf);
   }, [personCount]);
 
+  // ── 형제 드래그 정렬 ─────────────────────────────────
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const dragRef = useRef(drag);
+  dragRef.current = drag;
+  const suppressClick = useRef(false);
+
+  const clientToSvg = (cx: number, cy: number) => {
+    const rect = svgRef.current!.getBoundingClientRect();
+    const vb = viewBoxRef.current;
+    return {
+      x: vb.x + ((cx - rect.left) / rect.width) * vb.w,
+      y: vb.y + ((cy - rect.top) / rect.height) * vb.h,
+    };
+  };
+
+  const onNodeDragStart = (personId: string, e: React.PointerEvent) => {
+    // 형제 그룹(같은 부모 유닛의 혈연 자녀)이 2명 이상일 때만 정렬 드래그.
+    // 아니면 이벤트를 흘려보내 배경 팬으로 처리
+    const myLink = layout.childLinks.find((l) => l.childId === personId);
+    if (!myLink) return;
+    const siblings = layout.childLinks
+      .filter((l) => l.parentUnitId === myLink.parentUnitId)
+      .map((l) => l.childId);
+    if (siblings.length < 2) return;
+    e.stopPropagation();
+    const withCenters = siblings
+      .map((id) => ({ id, cx: layout.positions.get(id)!.x + NODE_W / 2 }))
+      .sort((a, b) => a.cx - b.cx);
+    const pos = layout.positions.get(personId)!;
+    const pt = clientToSvg(e.clientX, e.clientY);
+    setDrag({
+      personId,
+      pointerId: e.pointerId,
+      groupIds: withCenters.map((s) => s.id),
+      slotCenters: withCenters.map((s) => s.cx),
+      rowY: pos.y,
+      offsetX: pt.x - pos.x,
+      offsetY: pt.y - pos.y,
+      pointer: pt,
+      startClient: { x: e.clientX, y: e.clientY },
+      active: false,
+    });
+  };
+
+  useEffect(() => {
+    if (!drag) return;
+    const onMove = (e: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+      const dist = Math.hypot(e.clientX - d.startClient.x, e.clientY - d.startClient.y);
+      const active = d.active || dist > DRAG_THRESHOLD_PX;
+      setDrag({ ...d, pointer: clientToSvg(e.clientX, e.clientY), active });
+    };
+    const onUp = (e: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+      if (d.active) {
+        // 드래그 직후 발생하는 click으로 선택이 바뀌지 않도록 억제
+        suppressClick.current = true;
+        setTimeout(() => {
+          suppressClick.current = false;
+        }, 0);
+        const others = d.groupIds
+          .map((id, i) => ({ id, cx: d.slotCenters[i] }))
+          .filter((s) => s.id !== d.personId);
+        const insertIdx = others.filter((s) => s.cx < d.pointer.x).length;
+        const newOrder = others.map((s) => s.id);
+        newOrder.splice(insertIdx, 0, d.personId);
+        if (newOrder.join() !== d.groupIds.join()) reorderSiblings(newOrder);
+      }
+      setDrag(null);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drag !== null]);
+
+  // 삽입 위치 표시선 x 좌표
+  const indicatorX = (() => {
+    if (!drag?.active) return null;
+    const others = drag.groupIds
+      .map((id, i) => ({ id, cx: drag.slotCenters[i] }))
+      .filter((s) => s.id !== drag.personId);
+    const idx = others.filter((s) => s.cx < drag.pointer.x).length;
+    if (others.length === 0) return null;
+    if (idx === 0) return others[0].cx - NODE_W / 2 - H_GAP / 2;
+    if (idx === others.length) return others[others.length - 1].cx + NODE_W / 2 + H_GAP / 2;
+    return (others[idx - 1].cx + others[idx].cx) / 2;
+  })();
+
+  // ── 연결선 좌표 ──────────────────────────────────────
   const couplePaths = layout.couples.map(({ a, b }) => {
     const pa = layout.positions.get(a)!;
     const pb = layout.positions.get(b)!;
@@ -70,12 +187,19 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
     const anchor = layout.unitAnchors.get(parentUnitId)!;
     const parentBottom = layout.genToY(anchor.gen) + NODE_H;
     const mx = member.x + NODE_W / 2;
-    const busY = member.y - BUS_OFFSET + 8;
+    const busY = member.y - BUS_OFFSET + 6;
     return {
       key: `i-${memberId}`,
       d: `M ${mx} ${member.y} V ${busY} H ${anchor.x} V ${parentBottom}`,
     };
   });
+
+  const guardedSelect = (id: string) => {
+    if (!wasDragged() && !suppressClick.current) selectPerson(id);
+  };
+  const guardedOpenDialog = (id: string) => {
+    if (!wasDragged() && !suppressClick.current) openDialog(id);
+  };
 
   return (
     <svg
@@ -88,14 +212,14 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
       onClick={() => {
-        if (!wasDragged()) clearSelection();
+        if (!wasDragged() && !suppressClick.current) clearSelection();
       }}
     >
       <g className="edges">
         {couplePaths.map((c) => (
           <g key={c.key} className="couple-line">
-            <line x1={c.x1} y1={c.y - 2.5} x2={c.x2} y2={c.y - 2.5} />
-            <line x1={c.x1} y1={c.y + 2.5} x2={c.x2} y2={c.y + 2.5} />
+            <line x1={c.x1} y1={c.y - 2} x2={c.x2} y2={c.y - 2} />
+            <line x1={c.x1} y1={c.y + 2} x2={c.x2} y2={c.y + 2} />
           </g>
         ))}
         {childPaths.map((p) => (
@@ -114,15 +238,32 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
             y={pos.y}
             isEgo={pos.id === data.egoId}
             selection={pos.id === baseId ? 'base' : pos.id === targetId ? 'target' : null}
-            onSelect={(id) => {
-              if (!wasDragged()) selectPerson(id);
-            }}
-            onOpenDialog={(id) => {
-              if (!wasDragged()) openDialog(id);
-            }}
+            dimmed={drag?.active === true && pos.id === drag.personId}
+            onSelect={guardedSelect}
+            onOpenDialog={guardedOpenDialog}
+            onDragStart={onNodeDragStart}
           />
         ))}
       </g>
+      {drag?.active && indicatorX !== null && (
+        <line
+          className="insert-indicator"
+          x1={indicatorX}
+          y1={drag.rowY - 8}
+          x2={indicatorX}
+          y2={drag.rowY + NODE_H + 8}
+        />
+      )}
+      {drag?.active && (
+        <PersonNode
+          person={data.persons[drag.personId]}
+          x={drag.pointer.x - drag.offsetX}
+          y={drag.pointer.y - drag.offsetY}
+          isEgo={drag.personId === data.egoId}
+          selection={null}
+          ghost
+        />
+      )}
     </svg>
   );
 }

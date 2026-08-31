@@ -42,7 +42,9 @@ export function usePanZoom(initial: ViewBox) {
 
   const onWheel = useCallback(
     (e: React.WheelEvent<SVGSVGElement>) => {
-      zoomAt(e.currentTarget, e.clientX, e.clientY, e.deltaY > 0 ? 1.12 : 1 / 1.12);
+      // delta 크기에 비례한 줌 (한 노치 ≈ deltaY 100 → 약 1.13배)
+      const factor = Math.pow(1.0012, e.deltaY);
+      zoomAt(e.currentTarget, e.clientX, e.clientY, factor);
     },
     [zoomAt],
   );

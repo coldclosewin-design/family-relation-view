@@ -7,19 +7,44 @@ interface Props {
   y: number;
   isEgo: boolean;
   selection: 'base' | 'target' | null;
-  onSelect: (id: string) => void;
-  onOpenDialog: (id: string) => void;
+  /** 드래그 중 원래 자리 표시용 */
+  dimmed?: boolean;
+  /** 드래그 중 포인터를 따라다니는 고스트 */
+  ghost?: boolean;
+  onSelect?: (id: string) => void;
+  onOpenDialog?: (id: string) => void;
+  onDragStart?: (id: string, e: React.PointerEvent) => void;
 }
 
-export function PersonNode({ person, x, y, isEgo, selection, onSelect, onOpenDialog }: Props) {
+export function PersonNode({
+  person,
+  x,
+  y,
+  isEgo,
+  selection,
+  dimmed,
+  ghost,
+  onSelect,
+  onOpenDialog,
+  onDragStart,
+}: Props) {
   const cls = [
     'person-node',
     person.gender,
     selection === 'base' ? 'sel-base' : '',
     selection === 'target' ? 'sel-target' : '',
+    dimmed ? 'drag-source' : '',
+    ghost ? 'drag-ghost' : '',
   ]
     .filter(Boolean)
     .join(' ');
+
+  const hasYear = person.birthYear != null;
+  // 긴 이름은 카드 폭에 맞춰 압축
+  const nameLenProps =
+    person.name.length > 5
+      ? { textLength: NODE_W - 12, lengthAdjust: 'spacingAndGlyphs' as const }
+      : {};
 
   return (
     <g
@@ -27,33 +52,45 @@ export function PersonNode({ person, x, y, isEgo, selection, onSelect, onOpenDia
       transform={`translate(${x}, ${y})`}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(person.id);
+        onSelect?.(person.id);
       }}
+      onPointerDown={(e) => onDragStart?.(person.id, e)}
     >
-      <rect className="person-card" width={NODE_W} height={NODE_H} rx={10} />
-      <text className="person-name" x={NODE_W / 2} y={27} textAnchor="middle">
+      <rect className="person-card" width={NODE_W} height={NODE_H} rx={8} />
+      <text
+        className="person-name"
+        x={NODE_W / 2}
+        y={hasYear ? 20 : NODE_H / 2 + 5}
+        textAnchor="middle"
+        {...nameLenProps}
+      >
         {person.name}
       </text>
-      <text className="person-year" x={NODE_W / 2} y={47} textAnchor="middle">
-        {person.birthYear ? `${person.birthYear}년생` : ' '}
-      </text>
+      {hasYear && (
+        <text className="person-year" x={NODE_W / 2} y={37} textAnchor="middle">
+          {person.birthYear}년생
+        </text>
+      )}
       {isEgo && (
-        <g className="ego-badge" transform="translate(10, -8)">
-          <rect width={26} height={16} rx={8} />
-          <text x={13} y={12} textAnchor="middle">나</text>
+        <g className="ego-badge" transform="translate(6, -6)">
+          <rect width={22} height={14} rx={7} />
+          <text x={11} y={11} textAnchor="middle">나</text>
         </g>
       )}
-      <g
-        className="add-btn"
-        transform={`translate(${NODE_W - 2}, 2)`}
-        onClick={(e) => {
-          e.stopPropagation();
-          onOpenDialog(person.id);
-        }}
-      >
-        <circle r={11} />
-        <text y={4} textAnchor="middle">+</text>
-      </g>
+      {!ghost && (
+        <g
+          className="add-btn"
+          transform={`translate(${NODE_W - 2}, 2)`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenDialog?.(person.id);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <circle r={9} />
+          <text y={4} textAnchor="middle">+</text>
+        </g>
+      )}
     </g>
   );
 }

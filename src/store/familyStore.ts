@@ -6,9 +6,11 @@ import {
   createInitialData,
   MutationError,
   removePerson,
+  setSiblingOrder,
   updatePerson,
   type PersonForm,
   type RelativeKind,
+  type SiblingPlacement,
 } from '../model/mutations';
 
 interface FamilyStore {
@@ -20,7 +22,13 @@ interface FamilyStore {
   error: string | null;
 
   start: (form: PersonForm) => void;
-  addRelative: (anchorId: string, kind: RelativeKind, form: PersonForm) => void;
+  addRelative: (
+    anchorId: string,
+    kind: RelativeKind,
+    form: PersonForm,
+    placement?: SiblingPlacement,
+  ) => void;
+  reorderSiblings: (orderedIds: string[]) => void;
   updatePerson: (id: string, patch: Partial<PersonForm>) => void;
   removePerson: (id: string) => void;
   selectPerson: (id: string) => void;
@@ -44,14 +52,20 @@ export const useFamilyStore = create<FamilyStore>()(
 
       start: (form) => set({ data: createInitialData(form) }),
 
-      addRelative: (anchorId, kind, form) => {
+      addRelative: (anchorId, kind, form, placement) => {
         const { data } = get();
         if (!data) return;
         try {
-          set({ data: addRelative(data, anchorId, kind, form), dialogAnchorId: null });
+          set({ data: addRelative(data, anchorId, kind, form, placement), dialogAnchorId: null });
         } catch (e) {
           set({ error: e instanceof MutationError ? e.message : '추가에 실패했습니다.' });
         }
+      },
+
+      reorderSiblings: (orderedIds) => {
+        const { data } = get();
+        if (!data) return;
+        set({ data: setSiblingOrder(data, orderedIds) });
       },
 
       updatePerson: (id, patch) => {
