@@ -34,6 +34,16 @@ export interface InLawToggle {
   collapsed: boolean;
 }
 
+/** 배우자+후손 접기/펼치기 토글 정보 (유닛 하단 배지) */
+export interface DescToggle {
+  /** 접어도 남는 혈연 대표 인물 (접기 상태의 키) */
+  personId: string;
+  unitId: string;
+  /** 접었을 때 숨는 인원 수 (배우자 + 후손) */
+  count: number;
+  collapsed: boolean;
+}
+
 export interface LayoutResult {
   positions: Map<string, PersonPos>;
   couples: Array<{ a: string; b: string }>;
@@ -41,6 +51,7 @@ export interface LayoutResult {
   inLawLinks: Array<{ memberId: string; parentUnitId: string }>;
   unitAnchors: Map<string, { x: number; gen: number; isCouple: boolean }>;
   inLawToggles: InLawToggle[];
+  descToggles: DescToggle[];
   genToY: (gen: number) => number;
   bounds: { minX: number; minY: number; maxX: number; maxY: number };
 }
@@ -52,6 +63,7 @@ function unitWidth(unit: CoupleUnit): number {
 export function layoutFamily(
   graph: FamilyGraph,
   collapsed: ReadonlySet<string> = new Set(),
+  collapsedDesc: ReadonlySet<string> = new Set(),
 ): LayoutResult {
   const gens = assignGenerations(graph);
   const blood = bloodDistances(graph);
@@ -89,6 +101,50 @@ export function layoutFamily(
     u.children.sort((a, b) =>
       compareSiblings(graph.persons[a.connectingChildId!], graph.persons[b.connectingChildId!]),
     );
+  }
+
+  // ── 배우자+후손 접기 ──────────────────────────────────
+  // 각 유닛의 혈연 대표(anchor)만 남기고 배우자·후손 전체를 숨긴다.
+  // 계획을 원본 구조에서 전부 세운 뒤 일괄 적용해 중첩 접기에도 인원 수가 정확하다.
+  const hiddenPersons = new Set<string>();
+  const descToggles: DescToggle[] = [];
+  {
+    const subtreePersons = (u: LayoutUnit): string[] => {
+      const out: string[] = [];
+      const walk = (c: LayoutUnit) => {
+        out.push(...c.members);
+        c.children.forEach(walk);
+      };
+      u.children.forEach(walk);
+      return out;
+    };
+    const anchorMemberOf = (u: LayoutUnit): string => {
+      if (u.members.length === 1) return u.members[0];
+      const [a, b] = u.members;
+      return (blood.get(a) ?? Infinity) <= (blood.get(b) ?? Infinity) ? a : b;
+    };
+    const plans: Array<{ unit: LayoutUnit; anchor: string; hidden: string[] }> = [];
+    for (const u of lunits.values()) {
+      if (u.children.length === 0) continue;
+      const anchor = anchorMemberOf(u);
+      const hidden = [...u.members.filter((m) => m !== anchor), ...subtreePersons(u)];
+      // '나'가 숨겨지는 접기(조상 유닛)는 허용하지 않는다
+      if (hidden.includes(graph.data.egoId)) continue;
+      plans.push({ unit: u, anchor, hidden });
+      descToggles.push({
+        personId: anchor,
+        unitId: u.id,
+        count: hidden.length,
+        collapsed: collapsedDesc.has(anchor),
+      });
+    }
+    for (const p of plans) {
+      if (!collapsedDesc.has(p.anchor)) continue;
+      for (const h of p.hidden) hiddenPersons.add(h);
+      p.unit.members = [p.anchor];
+      // 자식 유닛은 parent 포인터가 남아 루트 목록에 잡히지 않으므로 자연히 제외된다
+      p.unit.children = [];
+    }
   }
 
   // ── 트리(연결 요소) 수집 ──────────────────────────────
@@ -130,7 +186,10 @@ export function layoutFamily(
     for (const root of roots) {
       if (visibleRoots.has(root)) continue;
       const ok = (connectorsOf.get(root) ?? []).some(
-        (c) => !collapsed.has(c.memberId) && visibleRoots.has(rootOfMember(c.memberId)),
+        (c) =>
+          !collapsed.has(c.memberId) &&
+          !hiddenPersons.has(c.memberId) &&
+          visibleRoots.has(rootOfMember(c.memberId)),
       );
       if (ok) {
         visibleRoots.add(root);
@@ -145,6 +204,7 @@ export function layoutFamily(
   const inLawToggles: InLawToggle[] = [];
   for (const root of roots) {
     for (const c of connectorsOf.get(root) ?? []) {
+      if (hiddenPersons.has(c.memberId)) continue;
       if (!visibleRoots.has(rootOfMember(c.memberId))) continue;
       inLawToggles.push({
         memberId: c.memberId,
@@ -262,7 +322,10 @@ export function layoutFamily(
   /** 배치된 트리에 연결된 유효 연결부 (없으면 null) */
   const placedConnector = (root: LayoutUnit) =>
     (connectorsOf.get(root) ?? []).find(
-      (c) => !collapsed.has(c.memberId) && placedRoots.has(rootOfMember(c.memberId)),
+      (c) =>
+        !collapsed.has(c.memberId) &&
+        !hiddenPersons.has(c.memberId) &&
+        placedRoots.has(rootOfMember(c.memberId)),
     ) ?? null;
 
   const pending = [...visibleRoots].filter((r) => r !== egoRoot);
@@ -369,6 +432,7 @@ export function layoutFamily(
     inLawLinks,
     unitAnchors,
     inLawToggles,
+    descToggles,
     genToY,
     bounds: { minX, minY, maxX, maxY },
   };

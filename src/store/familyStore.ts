@@ -29,6 +29,8 @@ interface FamilyStore {
   hasSeenHelp: boolean;
   /** 원가족 트리를 접어둔 배우자 멤버 id 목록 (저장됨) */
   collapsedInLaws: string[];
+  /** 배우자+후손을 접어둔 혈연 대표 인물 id 목록 (저장됨) */
+  collapsedDescendants: string[];
 
   start: (form: PersonForm) => void;
   addRelative: (
@@ -52,6 +54,7 @@ interface FamilyStore {
   focusPerson: (id: string) => void;
   setHelpOpen: (open: boolean) => void;
   toggleInLawCollapse: (memberId: string) => void;
+  toggleDescCollapse: (personId: string) => void;
 }
 
 export const useFamilyStore = create<FamilyStore>()(
@@ -67,6 +70,7 @@ export const useFamilyStore = create<FamilyStore>()(
       helpOpen: false,
       hasSeenHelp: false,
       collapsedInLaws: [],
+      collapsedDescendants: [],
 
       start: (form) => set({ data: createInitialData(form) }),
 
@@ -151,6 +155,15 @@ export const useFamilyStore = create<FamilyStore>()(
             : [...cur, memberId],
         });
       },
+
+      toggleDescCollapse: (personId) => {
+        const cur = get().collapsedDescendants;
+        set({
+          collapsedDescendants: cur.includes(personId)
+            ? cur.filter((id) => id !== personId)
+            : [...cur, personId],
+        });
+      },
     }),
     {
       name: 'family-relation-view:data:v1',
@@ -159,6 +172,7 @@ export const useFamilyStore = create<FamilyStore>()(
         labelMode: state.labelMode,
         hasSeenHelp: state.hasSeenHelp,
         collapsedInLaws: state.collapsedInLaws,
+        collapsedDescendants: state.collapsedDescendants,
       }),
     },
   ),

@@ -54,10 +54,16 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const reorderSiblings = useFamilyStore((s) => s.reorderSiblings);
   const collapsedInLaws = useFamilyStore((s) => s.collapsedInLaws);
   const toggleInLawCollapse = useFamilyStore((s) => s.toggleInLawCollapse);
+  const collapsedDescendants = useFamilyStore((s) => s.collapsedDescendants);
+  const toggleDescCollapse = useFamilyStore((s) => s.toggleDescCollapse);
 
   const graph = useMemo(() => buildGraph(data), [data]);
   const collapsedSet = useMemo(() => new Set(collapsedInLaws), [collapsedInLaws]);
-  const layout = useMemo(() => layoutFamily(graph, collapsedSet), [graph, collapsedSet]);
+  const collapsedDescSet = useMemo(() => new Set(collapsedDescendants), [collapsedDescendants]);
+  const layout = useMemo(
+    () => layoutFamily(graph, collapsedSet, collapsedDescSet),
+    [graph, collapsedSet, collapsedDescSet],
+  );
   const svgRef = useRef<SVGSVGElement>(null);
 
   const {
@@ -104,7 +110,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
     };
     tryFit();
     return () => cancelAnimationFrame(raf);
-  }, [personCount, collapsedSet.size]);
+  }, [personCount, collapsedSet.size, collapsedDescSet.size]);
 
   // ── 검색/버튼으로 특정 인물에 포커스 ────────────────
   const [flashId, setFlashId] = useState<string | null>(null);
@@ -401,6 +407,35 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
               </title>
               <rect x={0} y={-8} width={w} height={16} rx={8} />
               <text x={w / 2} y={4} textAnchor="middle">{label}</text>
+            </g>
+          );
+        })}
+      </g>
+      <g className="desc-toggles">
+        {layout.descToggles.map((t) => {
+          const anchor = layout.unitAnchors.get(t.unitId);
+          if (!anchor) return null;
+          const y = layout.genToY(anchor.gen) + NODE_H;
+          const label = t.collapsed ? `+${t.count}` : '▾';
+          const w = t.collapsed ? 14 + String(t.count).length * 8 : 18;
+          return (
+            <g
+              key={t.unitId}
+              className={`desc-toggle ${t.collapsed ? 'collapsed' : ''}`}
+              transform={`translate(${anchor.x - w / 2}, ${y - 2})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleDescCollapse(t.personId);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <title>
+                {t.collapsed
+                  ? `${data.persons[t.personId].name}의 배우자·후손 ${t.count}명 펼치기`
+                  : `${data.persons[t.personId].name}의 배우자·후손 접기`}
+              </title>
+              <rect x={0} y={-4} width={w} height={14} rx={7} />
+              <text x={w / 2} y={7} textAnchor="middle">{label}</text>
             </g>
           );
         })}

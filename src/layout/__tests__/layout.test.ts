@@ -38,6 +38,7 @@ function makeFixture(): FamilyData {
   marry('wF', 'wM');
   add('wife', '아내', 'female', 1991, 'wF', 'wM');
   marry('ego', 'wife');
+  add('son', '아들', 'male', 2018, 'ego', 'wife');
   // 형 + 형수의 원가족 (인척 트리가 여러 개 경쟁하는 상황)
   add('brother', '형', 'male', 1988, 'father', 'mother');
   add('bwF', '사돈댁아버지', 'male', 1958);
@@ -99,5 +100,32 @@ describe('인척 트리 접기 (P2)', () => {
     const layout = layoutFamily(graph, new Set(['father', 'ego']));
     expect(layout.positions.has('ego')).toBe(true);
     expect(layout.positions.has('father')).toBe(true);
+  });
+});
+
+describe('배우자+후손 접기 (하단 배지)', () => {
+  it('접으면 배우자·후손이 숨고, 배우자를 통해 연결된 처가도 연쇄로 숨는다', () => {
+    const layout = layoutFamily(graph, new Set(), new Set(['ego']));
+    for (const id of ['wife', 'son', 'wF', 'wM']) {
+      expect(layout.positions.has(id), id).toBe(false);
+    }
+    expect(layout.positions.has('ego')).toBe(true);
+    expect(layout.positions.has('father')).toBe(true);
+    const toggle = layout.descToggles.find((t) => t.personId === 'ego');
+    expect(toggle).toMatchObject({ collapsed: true, count: 2 }); // 아내 + 아들
+  });
+
+  it("'나'가 숨겨지는 조상 유닛에는 접기 토글이 생기지 않는다", () => {
+    const layout = layoutFamily(graph);
+    const anchors = layout.descToggles.map((t) => t.personId);
+    expect(anchors).not.toContain('father');
+    expect(anchors).not.toContain('gfa');
+    expect(anchors).toContain('ego');
+  });
+
+  it('접기 무시: 조상을 접기 대상으로 지정해도 아무 일도 일어나지 않는다', () => {
+    const layout = layoutFamily(graph, new Set(), new Set(['father']));
+    expect(layout.positions.has('ego')).toBe(true);
+    expect(layout.positions.size).toBe(Object.keys(graph.persons).length);
   });
 });
