@@ -50,9 +50,12 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const clearSelection = useFamilyStore((s) => s.clearSelection);
   const openDialog = useFamilyStore((s) => s.openDialog);
   const reorderSiblings = useFamilyStore((s) => s.reorderSiblings);
+  const collapsedInLaws = useFamilyStore((s) => s.collapsedInLaws);
+  const toggleInLawCollapse = useFamilyStore((s) => s.toggleInLawCollapse);
 
   const graph = useMemo(() => buildGraph(data), [data]);
-  const layout = useMemo(() => layoutFamily(graph), [graph]);
+  const collapsedSet = useMemo(() => new Set(collapsedInLaws), [collapsedInLaws]);
+  const layout = useMemo(() => layoutFamily(graph, collapsedSet), [graph, collapsedSet]);
   const svgRef = useRef<SVGSVGElement>(null);
 
   const {
@@ -99,7 +102,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
     };
     tryFit();
     return () => cancelAnimationFrame(raf);
-  }, [personCount]);
+  }, [personCount, collapsedSet.size]);
 
   // ── 검색/버튼으로 특정 인물에 포커스 ────────────────
   const [flashId, setFlashId] = useState<string | null>(null);
@@ -370,7 +373,35 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
             />
           ))}
         </g>
-        {drag?.active && indicatorX !== null && (
+        <g className="inlaw-toggles">
+        {layout.inLawToggles.map((t) => {
+          const pos = layout.positions.get(t.memberId);
+          if (!pos) return null;
+          const label = t.collapsed ? `+${t.count}` : '−';
+          const w = t.collapsed ? 14 + String(t.count).length * 8 : 18;
+          return (
+            <g
+              key={t.memberId}
+              className={`inlaw-toggle ${t.collapsed ? 'collapsed' : ''}`}
+              transform={`translate(${pos.x + 6}, ${pos.y - 8})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleInLawCollapse(t.memberId);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <title>
+                {t.collapsed
+                  ? `${data.persons[t.memberId].name}의 원가족 ${t.count}명 펼치기`
+                  : `${data.persons[t.memberId].name}의 원가족 접기`}
+              </title>
+              <rect x={0} y={-8} width={w} height={16} rx={8} />
+              <text x={w / 2} y={4} textAnchor="middle">{label}</text>
+            </g>
+          );
+        })}
+      </g>
+      {drag?.active && indicatorX !== null && (
           <line
             className="insert-indicator"
             x1={indicatorX}

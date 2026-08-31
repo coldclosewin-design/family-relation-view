@@ -27,6 +27,8 @@ interface FamilyStore {
   helpOpen: boolean;
   /** 도움말을 한 번이라도 봤는지 (첫 방문 자동 표시용, 저장됨) */
   hasSeenHelp: boolean;
+  /** 원가족 트리를 접어둔 배우자 멤버 id 목록 (저장됨) */
+  collapsedInLaws: string[];
 
   start: (form: PersonForm) => void;
   addRelative: (
@@ -49,6 +51,7 @@ interface FamilyStore {
   toggleLabelMode: () => void;
   focusPerson: (id: string) => void;
   setHelpOpen: (open: boolean) => void;
+  toggleInLawCollapse: (memberId: string) => void;
 }
 
 export const useFamilyStore = create<FamilyStore>()(
@@ -63,6 +66,7 @@ export const useFamilyStore = create<FamilyStore>()(
       focusRequest: null,
       helpOpen: false,
       hasSeenHelp: false,
+      collapsedInLaws: [],
 
       start: (form) => set({ data: createInitialData(form) }),
 
@@ -138,6 +142,15 @@ export const useFamilyStore = create<FamilyStore>()(
         set({ focusRequest: { id, nonce: (get().focusRequest?.nonce ?? 0) + 1 } }),
 
       setHelpOpen: (open) => set({ helpOpen: open, hasSeenHelp: get().hasSeenHelp || open }),
+
+      toggleInLawCollapse: (memberId) => {
+        const cur = get().collapsedInLaws;
+        set({
+          collapsedInLaws: cur.includes(memberId)
+            ? cur.filter((id) => id !== memberId)
+            : [...cur, memberId],
+        });
+      },
     }),
     {
       name: 'family-relation-view:data:v1',
@@ -145,6 +158,7 @@ export const useFamilyStore = create<FamilyStore>()(
         data: state.data,
         labelMode: state.labelMode,
         hasSeenHelp: state.hasSeenHelp,
+        collapsedInLaws: state.collapsedInLaws,
       }),
     },
   ),

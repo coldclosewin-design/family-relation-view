@@ -215,6 +215,36 @@ button.toggled {
   stroke-width: 2.4;
 }
 
+/* ── 인척 트리 접기/펼치기 배지 ────────── */
+.inlaw-toggle {
+  cursor: pointer;
+}
+
+.inlaw-toggle rect {
+  fill: #fff;
+  stroke: #c4a86a;
+  stroke-width: 1.2;
+}
+
+.inlaw-toggle text {
+  font-size: 10px;
+  font-weight: 700;
+  fill: #9c8248;
+}
+
+.inlaw-toggle.collapsed rect {
+  fill: #c59a4a;
+  stroke: #c59a4a;
+}
+
+.inlaw-toggle.collapsed text {
+  fill: #fff;
+}
+
+.inlaw-toggle:hover rect {
+  stroke: #9c8248;
+}
+
 /* ── 검색 점프 강조 ───────────────────── */
 @keyframes flash-pulse {
   0%, 100% { stroke-width: 1.4; }
