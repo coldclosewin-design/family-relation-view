@@ -1,0 +1,535 @@
+:root {
+  --bg: #f6f4ef;
+  --panel: #ffffff;
+  --ink: #2b2b2b;
+  --muted: #8a857c;
+  --line: #b8b2a6;
+  --base: #2563eb;
+  --target: #ea580c;
+  --male-fill: #eaf2fd;
+  --male-stroke: #93b4e3;
+  --female-fill: #fdeff3;
+  --female-stroke: #e5a9bd;
+  --danger: #dc2626;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  color: var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  overscroll-behavior: none;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── 툴바 ─────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid #e5e0d5;
+  flex: none;
+}
+
+.app-title {
+  font-size: 17px;
+  margin: 0;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 12px;
+  border: 1px solid #d5cfc2;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #f1ede4;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--base);
+  border-color: var(--base);
+  color: #fff;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #1d4fd8;
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+/* ── 메인 ─────────────────────────────── */
+.main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+.tree-canvas {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+  display: block;
+}
+
+.tree-canvas:active {
+  cursor: grabbing;
+}
+
+/* ── 연결선 ───────────────────────────── */
+.couple-line line {
+  stroke: var(--line);
+  stroke-width: 1.6;
+}
+
+.child-line {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.6;
+}
+
+.inlaw-line {
+  fill: none;
+  stroke: #c4a86a;
+  stroke-width: 1.4;
+  stroke-dasharray: 5 4;
+}
+
+/* ── 인물 카드 ────────────────────────── */
+.person-node {
+  cursor: pointer;
+}
+
+.person-card {
+  fill: #fff;
+  stroke: #cfc9bc;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
+}
+
+.person-node.male .person-card {
+  fill: var(--male-fill);
+  stroke: var(--male-stroke);
+}
+
+.person-node.female .person-card {
+  fill: var(--female-fill);
+  stroke: var(--female-stroke);
+}
+
+.person-node.sel-base .person-card {
+  stroke: var(--base);
+  stroke-width: 3.5;
+}
+
+.person-node.sel-target .person-card {
+  stroke: var(--target);
+  stroke-width: 3.5;
+}
+
+.person-name {
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+
+.person-year {
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.ego-badge rect {
+  fill: var(--base);
+}
+
+.ego-badge text {
+  font-size: 11px;
+  font-weight: 700;
+  fill: #fff;
+}
+
+.add-btn circle {
+  fill: #fff;
+  stroke: #b9b3a6;
+  stroke-width: 1.2;
+}
+
+.add-btn text {
+  font-size: 15px;
+  font-weight: 700;
+  fill: #6b6559;
+}
+
+.add-btn:hover circle {
+  fill: var(--base);
+  stroke: var(--base);
+}
+
+.add-btn:hover text {
+  fill: #fff;
+}
+
+/* ── 결과 패널 ────────────────────────── */
+.result-panel {
+  flex: none;
+  width: 300px;
+  background: var(--panel);
+  border-left: 1px solid #e5e0d5;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.result-panel.empty {
+  justify-content: center;
+  text-align: center;
+}
+
+.hint-title {
+  font-weight: 700;
+  font-size: 15px;
+  margin: 0;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.hint.sub {
+  font-size: 12.5px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.chip.base {
+  background: var(--base);
+}
+
+.chip.target {
+  background: var(--target);
+}
+
+.pair-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.swap-btn {
+  font-size: 17px;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.result-main {
+  text-align: center;
+  background: #faf8f2;
+  border: 1px solid #ece7da;
+  border-radius: 12px;
+  padding: 18px 12px;
+}
+
+.result-caption {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.result-term {
+  font-size: 28px;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.result-term .formal {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.result-desc {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.chon-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #ede8db;
+  color: #6b6455;
+  font-size: 12px;
+}
+
+.result-reverse {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  font-size: 15px;
+  border-top: 1px dashed #e0dacb;
+  padding-top: 12px;
+}
+
+.reverse-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.result-reverse .formal {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── 다이얼로그 ───────────────────────── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 25, 15, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.dialog {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  width: min(340px, calc(100vw - 32px));
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.dialog-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.menu-list hr {
+  border: none;
+  border-top: 1px solid #eee8db;
+  margin: 6px 0;
+}
+
+.menu-item {
+  text-align: left;
+  padding: 11px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-reason {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.dialog-close {
+  margin-top: 12px;
+  width: 100%;
+}
+
+/* ── 폼 ───────────────────────────────── */
+.person-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.person-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.person-form input[type='text'],
+.person-form input[type='number'],
+.person-form input:not([type]) {
+  font: inherit;
+  padding: 9px 10px;
+  border: 1px solid #d5cfc2;
+  border-radius: 8px;
+}
+
+.person-form fieldset {
+  border: 1px solid #e5e0d5;
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+.person-form legend {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+.person-form .radio {
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  font-weight: 400;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── 온보딩 ───────────────────────────── */
+.onboarding {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.onboarding-card {
+  background: #fff;
+  border: 1px solid #e8e2d5;
+  border-radius: 16px;
+  padding: 28px;
+  width: min(380px, 100%);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+.onboarding-card h2 {
+  margin: 0 0 10px;
+}
+
+.onboarding-card p {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+  margin: 0 0 18px;
+}
+
+/* ── 토스트 ───────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3a352b;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  z-index: 30;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ── 모바일 ───────────────────────────── */
+@media (max-width: 768px) {
+  .main {
+    flex-direction: column;
+  }
+
+  .result-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #e5e0d5;
+    border-radius: 16px 16px 0 0;
+    max-height: 45vh;
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.07);
+  }
+
+  .result-panel.empty {
+    padding: 14px 18px;
+    gap: 4px;
+  }
+
+  .result-term {
+    font-size: 24px;
+  }
+
+  .app-title {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .toolbar {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .toolbar-actions button {
+    padding: 6px 9px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+}
