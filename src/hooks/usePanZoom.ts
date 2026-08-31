@@ -130,8 +130,13 @@ export function usePanZoom(initial: ViewBox) {
     [],
   );
 
+  /** 현재 줌 배율을 유지한 채 특정 지점을 화면 중앙으로 */
+  const centerOn = useCallback((cx: number, cy: number) => {
+    setViewBox((vb) => ({ ...vb, x: cx - vb.w / 2, y: cy - vb.h / 2 }));
+  }, []);
+
   /** 드래그 직후 click 이벤트에서 배경 클릭(선택 해제)과 팬을 구분 */
   const wasDragged = useCallback(() => moved.current, []);
 
-  return { viewBox, onWheel, onPointerDown, onPointerMove, onPointerUp, fit, wasDragged };
+  return { viewBox, onWheel, onPointerDown, onPointerMove, onPointerUp, fit, centerOn, wasDragged };
 }

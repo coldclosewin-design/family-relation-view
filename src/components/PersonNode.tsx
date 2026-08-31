@@ -11,6 +11,12 @@ interface Props {
   dimmed?: boolean;
   /** 드래그 중 포인터를 따라다니는 고스트 */
   ghost?: boolean;
+  /** 관계 경로 하이라이트 대상 */
+  onPath?: boolean;
+  /** 검색 점프 후 강조 애니메이션 */
+  flash?: boolean;
+  /** 카드 아래 작은 호칭 라벨 ('호칭 보기' 모드) */
+  subLabel?: string;
   onSelect?: (id: string) => void;
   onOpenDialog?: (id: string) => void;
   onDragStart?: (id: string, e: React.PointerEvent) => void;
@@ -24,6 +30,9 @@ export function PersonNode({
   selection,
   dimmed,
   ghost,
+  onPath,
+  flash,
+  subLabel,
   onSelect,
   onOpenDialog,
   onDragStart,
@@ -35,6 +44,8 @@ export function PersonNode({
     selection === 'target' ? 'sel-target' : '',
     dimmed ? 'drag-source' : '',
     ghost ? 'drag-ghost' : '',
+    onPath ? 'on-path' : '',
+    flash ? 'flash' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -69,6 +80,11 @@ export function PersonNode({
       {hasYear && (
         <text className="person-year" x={NODE_W / 2} y={37} textAnchor="middle">
           {person.birthYear}년생
+        </text>
+      )}
+      {subLabel && (
+        <text className="kin-label" x={NODE_W / 2} y={NODE_H + 13} textAnchor="middle">
+          {subLabel}
         </text>
       )}
       {isEgo && (

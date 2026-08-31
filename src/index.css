@@ -93,6 +93,34 @@ button.danger {
   color: var(--danger);
 }
 
+button.toggled {
+  background: var(--base);
+  border-color: var(--base);
+  color: #fff;
+}
+
+.toolbar-search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.toolbar-search input {
+  font: inherit;
+  font-size: 13px;
+  width: 120px;
+  padding: 6px 10px;
+  border: 1px solid #d5cfc2;
+  border-radius: 999px;
+}
+
+.toolbar-search button {
+  padding: 6px 8px;
+  border-radius: 999px;
+}
+
 /* ── 메인 ─────────────────────────────── */
 .main {
   flex: 1;
@@ -101,13 +129,48 @@ button.danger {
   position: relative;
 }
 
-.tree-canvas {
+.canvas-wrap {
   flex: 1;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tree-canvas {
   width: 100%;
   height: 100%;
   touch-action: none;
   cursor: grab;
   display: block;
+}
+
+.canvas-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.canvas-controls button {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* ── 세대 밴드 ────────────────────────── */
+.gen-band {
+  fill: rgba(151, 134, 102, 0.06);
+}
+
+.gen-band-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #b3a98f;
 }
 
 .tree-canvas:active {
@@ -131,6 +194,42 @@ button.danger {
   stroke: #c4a86a;
   stroke-width: 1.4;
   stroke-dasharray: 5 4;
+}
+
+/* ── 관계 경로 하이라이트 ─────────────── */
+.path-mode .person-node:not(.on-path):not(.drag-ghost) {
+  opacity: 0.3;
+}
+
+.path-mode .couple-line line,
+.path-mode .child-line,
+.path-mode .inlaw-line {
+  opacity: 0.15;
+}
+
+.path-mode .couple-line.on-path line,
+.path-mode .child-line.on-path,
+.path-mode .inlaw-line.on-path {
+  opacity: 1;
+  stroke: #c59a4a;
+  stroke-width: 2.4;
+}
+
+/* ── 검색 점프 강조 ───────────────────── */
+@keyframes flash-pulse {
+  0%, 100% { stroke-width: 1.4; }
+  50% { stroke-width: 4.5; stroke: #c59a4a; }
+}
+
+.person-node.flash .person-card {
+  animation: flash-pulse 0.6s ease-in-out 3;
+}
+
+/* ── 호칭 라벨 ────────────────────────── */
+.kin-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  fill: #8f7c52;
 }
 
 /* ── 인물 카드 ────────────────────────── */
@@ -602,12 +701,27 @@ button.danger {
 
   .toolbar {
     padding: 8px 10px;
-    gap: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
   }
 
   .toolbar-actions button {
     padding: 6px 9px;
     font-size: 12px;
     white-space: nowrap;
+  }
+
+  .toolbar-search {
+    margin: 0;
+  }
+
+  .toolbar-search input {
+    width: 84px;
+    font-size: 12px;
+  }
+
+  .canvas-controls {
+    bottom: 10px;
+    right: 10px;
   }
 }

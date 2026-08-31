@@ -20,6 +20,10 @@ interface FamilyStore {
   /** 가족 추가/수정 다이얼로그의 앵커 인물 */
   dialogAnchorId: string | null;
   error: string | null;
+  /** 모든 카드에 '나' 기준 호칭 라벨 표시 */
+  labelMode: boolean;
+  /** 검색 점프 등 특정 인물로 화면 이동 요청 */
+  focusRequest: { id: string; nonce: number } | null;
 
   start: (form: PersonForm) => void;
   addRelative: (
@@ -39,6 +43,8 @@ interface FamilyStore {
   importData: (data: FamilyData) => void;
   reset: () => void;
   setError: (msg: string | null) => void;
+  toggleLabelMode: () => void;
+  focusPerson: (id: string) => void;
 }
 
 export const useFamilyStore = create<FamilyStore>()(
@@ -49,6 +55,8 @@ export const useFamilyStore = create<FamilyStore>()(
       targetId: undefined,
       dialogAnchorId: null,
       error: null,
+      labelMode: false,
+      focusRequest: null,
 
       start: (form) => set({ data: createInitialData(form) }),
 
@@ -117,10 +125,15 @@ export const useFamilyStore = create<FamilyStore>()(
       reset: () => set({ data: null, baseId: undefined, targetId: undefined, dialogAnchorId: null }),
 
       setError: (msg) => set({ error: msg }),
+
+      toggleLabelMode: () => set({ labelMode: !get().labelMode }),
+
+      focusPerson: (id) =>
+        set({ focusRequest: { id, nonce: (get().focusRequest?.nonce ?? 0) + 1 } }),
     }),
     {
       name: 'family-relation-view:data:v1',
-      partialize: (state) => ({ data: state.data }),
+      partialize: (state) => ({ data: state.data, labelMode: state.labelMode }),
     },
   ),
 );
