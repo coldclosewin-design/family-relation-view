@@ -294,8 +294,10 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const guardedSelect = (id: string) => {
     if (!wasDragged() && !suppressClick.current) selectPerson(id);
   };
+  // + 버튼은 pointerdown을 자체 차단해 팬/드래그가 시작될 수 없으므로
+  // wasDragged 가드를 걸면 직전 팬의 잔류 플래그에 클릭이 먹히는 버그가 생긴다
   const guardedOpenDialog = (id: string) => {
-    if (!wasDragged() && !suppressClick.current) openDialog(id);
+    if (!suppressClick.current) openDialog(id);
   };
 
   return (
