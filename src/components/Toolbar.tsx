@@ -6,6 +6,8 @@ export function Toolbar() {
   const data = useFamilyStore((s) => s.data);
   const labelMode = useFamilyStore((s) => s.labelMode);
   const toggleLabelMode = useFamilyStore((s) => s.toggleLabelMode);
+  const genLimitOn = useFamilyStore((s) => s.genLimitOn);
+  const toggleGenLimit = useFamilyStore((s) => s.toggleGenLimit);
   const focusPerson = useFamilyStore((s) => s.focusPerson);
   const importData = useFamilyStore((s) => s.importData);
   const reset = useFamilyStore((s) => s.reset);
@@ -64,6 +66,15 @@ export function Toolbar() {
         <button className="help-btn" title="사용 가이드" onClick={() => setHelpOpen(true)}>
           ?
         </button>
+        {data && (
+          <button
+            className={genLimitOn ? 'toggled' : ''}
+            title="조부모~손주 범위만 표시 (그 너머 세대와 곁가지 숨김)"
+            onClick={toggleGenLimit}
+          >
+            3대
+          </button>
+        )}
         {data && (
           <button
             className={labelMode ? 'toggled' : ''}

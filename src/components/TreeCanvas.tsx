@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildGraph } from '../model/familyGraph';
 import { layoutFamily, H_GAP, LEVEL_H, NODE_H, NODE_W } from '../layout/treeLayout';
+import { filterByGenerationWindow } from '../layout/filterView';
 import { findKinPath } from '../kinship/pathFinder';
 import { computeKinship } from '../kinship/resolver';
 import { usePanZoom } from '../hooks/usePanZoom';
@@ -56,8 +57,14 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const toggleInLawCollapse = useFamilyStore((s) => s.toggleInLawCollapse);
   const collapsedDescendants = useFamilyStore((s) => s.collapsedDescendants);
   const toggleDescCollapse = useFamilyStore((s) => s.toggleDescCollapse);
+  const genLimitOn = useFamilyStore((s) => s.genLimitOn);
 
-  const graph = useMemo(() => buildGraph(data), [data]);
+  // 3대 보기: 조부모~손주 범위 밖 인물은 표시에서 제외 (데이터·호칭 계산은 전체 유지)
+  const displayData = useMemo(
+    () => (genLimitOn ? filterByGenerationWindow(data, 2, 2) : data),
+    [data, genLimitOn],
+  );
+  const graph = useMemo(() => buildGraph(displayData), [displayData]);
   const collapsedSet = useMemo(() => new Set(collapsedInLaws), [collapsedInLaws]);
   const collapsedDescSet = useMemo(() => new Set(collapsedDescendants), [collapsedDescendants]);
   const layout = useMemo(
@@ -80,7 +87,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const viewBoxRef = useRef(viewBox);
   viewBoxRef.current = viewBox;
 
-  const personCount = Object.keys(data.persons).length;
+  const personCount = Object.keys(displayData.persons).length;
   const fitRef = useRef(fit);
   fitRef.current = fit;
   const layoutRef = useRef(layout);
@@ -136,7 +143,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   }, [graph, baseId, targetId]);
 
   const unitMembers = (unitId: string): string[] => {
-    const spouse = data.persons[unitId]?.spouseIds[0];
+    const spouse = displayData.persons[unitId]?.spouseIds[0];
     return spouse ? [unitId, spouse] : [unitId];
   };
   const linkOnPath = (aIds: string[], b: string): boolean =>
@@ -146,12 +153,12 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const termMap = useMemo(() => {
     if (!labelMode) return null;
     const m = new Map<string, string>();
-    for (const id of Object.keys(data.persons)) {
-      if (id === data.egoId) continue;
-      m.set(id, computeKinship(graph, data.egoId, id).casual);
+    for (const id of Object.keys(displayData.persons)) {
+      if (id === displayData.egoId) continue;
+      m.set(id, computeKinship(graph, displayData.egoId, id).casual);
     }
     return m;
-  }, [labelMode, graph, data]);
+  }, [labelMode, graph, displayData]);
 
   // ── 세대 가이드 밴드 ────────────────────────────────
   const genBands = useMemo(() => {
@@ -368,7 +375,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
           {[...layout.positions.values()].map((pos) => (
             <PersonNode
               key={pos.id}
-              person={data.persons[pos.id]}
+              person={displayData.persons[pos.id]}
               x={pos.x}
               y={pos.y}
               isEgo={pos.id === data.egoId}
@@ -402,8 +409,8 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
             >
               <title>
                 {t.collapsed
-                  ? `${data.persons[t.memberId].name}의 원가족 ${t.count}명 펼치기`
-                  : `${data.persons[t.memberId].name}의 원가족 접기`}
+                  ? `${displayData.persons[t.memberId].name}의 원가족 ${t.count}명 펼치기`
+                  : `${displayData.persons[t.memberId].name}의 원가족 접기`}
               </title>
               <rect x={0} y={-8} width={w} height={16} rx={8} />
               <text x={w / 2} y={4} textAnchor="middle">{label}</text>
@@ -431,8 +438,8 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
             >
               <title>
                 {t.collapsed
-                  ? `${data.persons[t.personId].name}의 배우자·후손 ${t.count}명 펼치기`
-                  : `${data.persons[t.personId].name}의 배우자·후손 접기`}
+                  ? `${displayData.persons[t.personId].name}의 배우자·후손 ${t.count}명 펼치기`
+                  : `${displayData.persons[t.personId].name}의 배우자·후손 접기`}
               </title>
               <rect x={0} y={-4} width={w} height={14} rx={7} />
               <text x={w / 2} y={7} textAnchor="middle">{label}</text>
@@ -451,7 +458,7 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
         )}
         {drag?.active && (
           <PersonNode
-            person={data.persons[drag.personId]}
+            person={displayData.persons[drag.personId]}
             x={drag.pointer.x - drag.offsetX}
             y={drag.pointer.y - drag.offsetY}
             isEgo={drag.personId === data.egoId}

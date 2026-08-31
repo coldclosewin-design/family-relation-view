@@ -31,6 +31,8 @@ interface FamilyStore {
   collapsedInLaws: string[];
   /** 배우자+후손을 접어둔 혈연 대표 인물 id 목록 (저장됨) */
   collapsedDescendants: string[];
+  /** 3대 보기: 조부모~손주 범위만 표시 (저장됨, 기본 켜짐) */
+  genLimitOn: boolean;
 
   start: (form: PersonForm) => void;
   addRelative: (
@@ -55,6 +57,7 @@ interface FamilyStore {
   setHelpOpen: (open: boolean) => void;
   toggleInLawCollapse: (memberId: string) => void;
   toggleDescCollapse: (personId: string) => void;
+  toggleGenLimit: () => void;
 }
 
 export const useFamilyStore = create<FamilyStore>()(
@@ -71,6 +74,7 @@ export const useFamilyStore = create<FamilyStore>()(
       hasSeenHelp: false,
       collapsedInLaws: [],
       collapsedDescendants: [],
+      genLimitOn: true,
 
       start: (form) => set({ data: createInitialData(form) }),
 
@@ -156,6 +160,8 @@ export const useFamilyStore = create<FamilyStore>()(
         });
       },
 
+      toggleGenLimit: () => set({ genLimitOn: !get().genLimitOn }),
+
       toggleDescCollapse: (personId) => {
         const cur = get().collapsedDescendants;
         set({
@@ -173,6 +179,7 @@ export const useFamilyStore = create<FamilyStore>()(
         hasSeenHelp: state.hasSeenHelp,
         collapsedInLaws: state.collapsedInLaws,
         collapsedDescendants: state.collapsedDescendants,
+        genLimitOn: state.genLimitOn,
       }),
     },
   ),

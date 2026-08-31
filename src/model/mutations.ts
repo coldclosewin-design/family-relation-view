@@ -102,6 +102,13 @@ export function addRelative(
     case 'spouse': {
       anchor.spouseIds.push(person.id);
       person.spouseIds.push(anchorId);
+      // 앵커의 자녀 중 해당 부모 자리가 빈 아이는 새 배우자를 부모로 자동 연결
+      // (아버지 추가 → 아버지의 배우자 추가 경로에서 어머니가 중복 생성되는 문제 방지)
+      for (const child of Object.values(next.persons)) {
+        if (child.fatherId !== anchorId && child.motherId !== anchorId) continue;
+        if (person.gender === 'female' && !child.motherId) child.motherId = person.id;
+        else if (person.gender === 'male' && !child.fatherId) child.fatherId = person.id;
+      }
       break;
     }
     case 'child': {

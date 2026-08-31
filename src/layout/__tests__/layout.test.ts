@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FamilyData, Gender, Person } from '../../model/types';
 import { buildGraph } from '../../model/familyGraph';
 import { layoutFamily, NODE_H, NODE_W } from '../treeLayout';
+import { filterByGenerationWindow } from '../filterView';
 
 /** 친가 + 외가 + 처가가 있는 픽스처 */
 function makeFixture(): FamilyData {
@@ -20,7 +21,8 @@ function makeFixture(): FamilyData {
     persons[a].spouseIds.push(b);
     persons[b].spouseIds.push(a);
   };
-  add('gfa', '할아버지', 'male', 1930);
+  add('ggfa', '증조할아버지', 'male', 1905);
+  add('gfa', '할아버지', 'male', 1930, 'ggfa');
   add('gmo', '할머니', 'female', 1933);
   marry('gfa', 'gmo');
   add('father', '아버지', 'male', 1960, 'gfa', 'gmo');
@@ -127,5 +129,24 @@ describe('배우자+후손 접기 (하단 배지)', () => {
     const layout = layoutFamily(graph, new Set(), new Set(['father']));
     expect(layout.positions.has('ego')).toBe(true);
     expect(layout.positions.size).toBe(Object.keys(graph.persons).length);
+  });
+});
+
+describe('3대 보기 필터', () => {
+  it('조부모~손주 범위 밖(증조) 인물이 빠지고 참조도 정리된다', () => {
+    const data = makeFixture();
+    const filtered = filterByGenerationWindow(data, 2, 2);
+    expect(filtered.persons['ggfa']).toBeUndefined();
+    expect(filtered.persons['gfa'].fatherId).toBeUndefined();
+    expect(Object.keys(filtered.persons).length).toBe(Object.keys(data.persons).length - 1);
+    // 필터된 데이터로도 레이아웃이 정상 동작
+    const layout = layoutFamily(buildGraph(filtered));
+    expect(layout.positions.has('gfa')).toBe(true);
+    expect(layout.positions.has('son')).toBe(true);
+  });
+
+  it('범위가 전체를 포함하면 원본을 그대로 반환한다', () => {
+    const data = makeFixture();
+    expect(filterByGenerationWindow(data, 10, 10)).toBe(data);
   });
 });
