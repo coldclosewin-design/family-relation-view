@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildGraph } from '../model/familyGraph';
 import { layoutFamily, H_GAP, LEVEL_H, NODE_H, NODE_W } from '../layout/treeLayout';
 import { filterByGenerationWindow } from '../layout/filterView';
+import { exportSvgToPng } from '../utils/exportImage';
 import { findKinPath } from '../kinship/pathFinder';
 import { computeKinship } from '../kinship/resolver';
 import { usePanZoom } from '../hooks/usePanZoom';
@@ -60,6 +61,8 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
   const collapsedDescendants = useFamilyStore((s) => s.collapsedDescendants);
   const toggleDescCollapse = useFamilyStore((s) => s.toggleDescCollapse);
   const genLimitOn = useFamilyStore((s) => s.genLimitOn);
+  const exportImageNonce = useFamilyStore((s) => s.exportImageNonce);
+  const setError = useFamilyStore((s) => s.setError);
 
   // 3대 보기: 조부모~손주 범위 밖 인물은 표시에서 제외 (데이터·호칭 계산은 전체 유지)
   const displayData = useMemo(
@@ -120,6 +123,16 @@ export function TreeCanvas({ data }: { data: FamilyData }) {
     tryFit();
     return () => cancelAnimationFrame(raf);
   }, [personCount, collapsedSet.size, collapsedDescSet.size]);
+
+  // ── PNG 이미지 저장 요청 처리 ───────────────────────
+  useEffect(() => {
+    if (exportImageNonce === 0 || !svgRef.current) return;
+    const date = new Date().toISOString().slice(0, 10);
+    exportSvgToPng(svgRef.current, layoutRef.current.bounds, `가족관계도-${date}.png`)
+      .then(() => setError('이미지가 저장되었습니다.'))
+      .catch(() => setError('이미지 저장에 실패했습니다.'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportImageNonce]);
 
   // ── 검색/버튼으로 특정 인물에 포커스 ────────────────
   const [flashId, setFlashId] = useState<string | null>(null);

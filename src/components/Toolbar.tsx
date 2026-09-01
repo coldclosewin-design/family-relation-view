@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { downloadJson, readJsonFile } from '../utils/importExport';
+import { buildShareUrl } from '../utils/shareLink';
 import { useFamilyStore } from '../store/familyStore';
 
 export function Toolbar() {
@@ -13,6 +14,7 @@ export function Toolbar() {
   const reset = useFamilyStore((s) => s.reset);
   const setError = useFamilyStore((s) => s.setError);
   const setHelpOpen = useFamilyStore((s) => s.setHelpOpen);
+  const requestExportImage = useFamilyStore((s) => s.requestExportImage);
   const fileRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const cycleRef = useRef(0);
@@ -25,6 +27,30 @@ export function Toolbar() {
       setError(e instanceof Error ? e.message : '가져오기에 실패했습니다.');
     }
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const onShare = async () => {
+    if (!data) return;
+    const url = buildShareUrl(data);
+    if (url.length > 15000) {
+      setError('가족 인원이 많아 링크가 너무 깁니다. 내보내기(JSON 파일)로 공유해주세요.');
+      return;
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: '가족 호칭 계산기', url });
+        return;
+      } catch (e) {
+        // 사용자가 공유 시트를 닫은 경우는 조용히 종료
+        if (e instanceof DOMException && e.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setError('공유 링크가 복사되었습니다. 붙여넣기로 전달하세요!');
+    } catch {
+      window.prompt('아래 링크를 복사하세요', url);
+    }
   };
 
   const jumpToMatch = () => {
@@ -82,6 +108,16 @@ export function Toolbar() {
             onClick={toggleLabelMode}
           >
             호칭
+          </button>
+        )}
+        {data && (
+          <button title="링크 하나로 가족과 관계도 공유" onClick={onShare}>
+            공유
+          </button>
+        )}
+        {data && (
+          <button title="관계도를 PNG 이미지로 저장" onClick={requestExportImage}>
+            이미지
           </button>
         )}
         <button onClick={() => fileRef.current?.click()}>가져오기</button>

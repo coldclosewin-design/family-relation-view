@@ -34,6 +34,8 @@ interface FamilyStore {
   collapsedDescendants: string[];
   /** 3대 보기: 조부모~손주 범위만 표시 (저장됨, 기본 켜짐) */
   genLimitOn: boolean;
+  /** PNG 저장 요청 (TreeCanvas가 수행) */
+  exportImageNonce: number;
 
   start: (form: PersonForm) => void;
   addRelative: (
@@ -59,6 +61,7 @@ interface FamilyStore {
   toggleInLawCollapse: (memberId: string) => void;
   toggleDescCollapse: (personId: string) => void;
   toggleGenLimit: () => void;
+  requestExportImage: () => void;
 }
 
 export const useFamilyStore = create<FamilyStore>()(
@@ -76,6 +79,7 @@ export const useFamilyStore = create<FamilyStore>()(
       collapsedInLaws: [],
       collapsedDescendants: [],
       genLimitOn: true,
+      exportImageNonce: 0,
 
       start: (form) => set({ data: createInitialData(form) }),
 
@@ -167,6 +171,8 @@ export const useFamilyStore = create<FamilyStore>()(
       },
 
       toggleGenLimit: () => set({ genLimitOn: !get().genLimitOn }),
+
+      requestExportImage: () => set({ exportImageNonce: get().exportImageNonce + 1 }),
 
       toggleDescCollapse: (personId) => {
         const cur = get().collapsedDescendants;
